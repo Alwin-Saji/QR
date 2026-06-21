@@ -28,7 +28,7 @@ Follow these instructions to set up your own instance of ARC.
 ### 1. Clone the repository
 ```bash
 git clone https://github.com/Alwin-Saji/QR.git
-cd QR/ARC
+cd QR
 ```
 
 ### 2. Install Dependencies
