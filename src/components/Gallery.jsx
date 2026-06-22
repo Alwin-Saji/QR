@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../services/supabase';
-import { QRCodeSVG } from 'qrcode.react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { supabase } from '../services/supabase';import { QRCodeSVG } from 'qrcode.react';
 import { Download, QrCode, X, Trash2, CheckCircle2 } from 'lucide-react';
 
 export default function Gallery({ eventId, isCreator }) {
@@ -11,26 +10,38 @@ export default function Gallery({ eventId, isCreator }) {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const loaderRef = useRef(null);
+  const LIMIT = 50;
 
   useEffect(() => {
     if (!eventId) return;
 
-    const fetchPhotos = async () => {
+    const fetchPhotos = async (pageNum = 0) => {
+      if (pageNum === 0) setLoading(true);
+      else setLoadingMore(true);
+
       const { data, error } = await supabase
         .from('photos')
         .select('*')
         .eq('event_id', eventId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(pageNum * LIMIT, (pageNum + 1) * LIMIT - 1);
 
       if (error) {
         console.error("Error fetching photos: ", error);
       } else {
-        setPhotos(data || []);
+        setPhotos(prev => pageNum === 0 ? (data || []) : [...prev, ...(data || [])]);
+        if (!data || data.length < LIMIT) setHasMore(false);
       }
-      setLoading(false);
+
+      if (pageNum === 0) setLoading(false);
+      else setLoadingMore(false);
     };
 
-    fetchPhotos();
+    fetchPhotos(0);
 
     // Subscribe to real-time changes
     const channel = supabase
@@ -57,6 +68,51 @@ export default function Gallery({ eventId, isCreator }) {
       supabase.removeChannel(channel);
     };
   }, [eventId]);
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!hasMore || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          setPage(prev => {
+            const nextPage = prev + 1;
+            // fetchPhotos inside the first useEffect can't be accessed here
+            // so we trigger via page state change handled below
+            return nextPage;
+          });
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const current = loaderRef.current;
+    if (current) observer.observe(current);
+    return () => { if (current) observer.unobserve(current); };
+  }, [hasMore, loadingMore]);
+
+  // Fetch when page increments
+  useEffect(() => {
+    if (page === 0) return;
+    const fetchMore = async () => {
+      setLoadingMore(true);
+      const { data, error } = await supabase
+        .from('photos')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: false })
+        .range(page * LIMIT, (page + 1) * LIMIT - 1);
+
+      if (error) {
+        console.error("Error fetching more photos: ", error);
+      } else {
+        setPhotos(prev => [...prev, ...(data || [])]);
+        if (!data || data.length < LIMIT) setHasMore(false);
+      }
+      setLoadingMore(false);
+    };
+    fetchMore();
+  }, [page, eventId]);
 
   const toggleSelection = (id) => {
     setSelectedIds(prev => 
@@ -160,6 +216,15 @@ export default function Gallery({ eventId, isCreator }) {
             onToggleSelect={() => toggleSelection(photo.id)}
           />
         ))}
+      </div>
+      {/* Infinite scroll trigger */}
+      <div ref={loaderRef} className="flex justify-center py-6">
+        {loadingMore && (
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-theme-3"></div>
+        )}
+        {!hasMore && photos.length > 0 && (
+          <p className="text-theme-4/40 text-sm">All photos loaded</p>
+        )}
       </div>
 
       {/* QR Code Modal for specific photo */}
