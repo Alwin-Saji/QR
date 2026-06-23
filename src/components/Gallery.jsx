@@ -4,7 +4,7 @@ import { supabase } from '../services/supabase';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, QrCode, X, Trash2, CheckCircle2 } from 'lucide-react';
 
-export default function Gallery({ eventId, isCreator }) {
+export default function Gallery({ eventId, eventName, isCreator }) {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhotoForQR, setSelectedPhotoForQR] = useState(null);
@@ -218,6 +218,7 @@ export default function Gallery({ eventId, isCreator }) {
           <PhotoCard 
             key={photo.id} 
             photo={photo} 
+            eventName={eventName}
             onShowQR={() => setSelectedPhotoForQR(photo)}
             selectionMode={selectionMode}
             isSelected={selectedIds.includes(photo.id)}
@@ -256,7 +257,7 @@ export default function Gallery({ eventId, isCreator }) {
             
             <div className="bg-white p-4 rounded-2xl shadow-inner mb-6">
               <QRCodeSVG 
-                value={`${selectedPhotoForQR.url}?download=`} 
+                value={`${selectedPhotoForQR.url}?download=${(eventName || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}_${(selectedPhotoForQR.created_at ? new Date(selectedPhotoForQR.created_at) : new Date()).toTimeString().split(' ')[0].replace(/:/g, '-')}.jpg`} 
                 size={220}
                 level="L"
               />
@@ -273,8 +274,11 @@ export default function Gallery({ eventId, isCreator }) {
   );
 }
 
-function PhotoCard({ photo, onShowQR, selectionMode, isSelected, onToggleSelect }) {
+function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onToggleSelect }) {
   const [showOverlay, setShowOverlay] = useState(false);
+  const safeName = (eventName || 'Event').replace(/[^a-zA-Z0-9]/g, '_');
+  const timeStr = (photo.created_at ? new Date(photo.created_at) : new Date()).toTimeString().split(' ')[0].replace(/:/g, '-');
+  const downloadName = `${safeName}_${timeStr}.jpg`;
 
   if (selectionMode) {
     return (
@@ -319,8 +323,8 @@ function PhotoCard({ photo, onShowQR, selectionMode, isSelected, onToggleSelect 
         onClick={(e) => e.stopPropagation()} // Prevent toggling when clicking buttons
       >
          <a 
-          href={photo.url} 
-          download
+          href={`${photo.url}?download=${downloadName}`} 
+          download={downloadName}
           target="_blank" 
           rel="noreferrer" 
           className="flex flex-col items-center justify-center text-white hover:text-theme-3 transition-colors"

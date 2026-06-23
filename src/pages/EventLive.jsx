@@ -107,7 +107,7 @@ export default function EventLive() {
 
       {/* Main Gallery Area */}
       <main className="container mx-auto max-w-7xl pt-8 px-4">
-        <Gallery eventId={eventId} isCreator={isCreator} />
+        <Gallery eventId={eventId} eventName={eventData.name} isCreator={isCreator} />
       </main>
 
       {/* Floating Action Button for Camera Capture */}
