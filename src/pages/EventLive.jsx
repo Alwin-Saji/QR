@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { uploadPhoto } from '../services/storage';
 import Gallery from '../components/Gallery';
 import CameraCapture from '../components/CameraCapture';
 import QRCodeDisplay from '../components/QRCodeDisplay';
-import { QrCode, Share2 } from 'lucide-react';
+import { QrCode, Share2,Upload,Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function EventLive() {
@@ -13,6 +14,10 @@ export default function EventLive() {
   const [loading, setLoading] = useState(true);
   const [showQR, setShowQR] = useState(false);
   const { user } = useAuth();
+
+  const [isDragging,setIsDragging] = useState(false)
+  const [isUploadingDrag,setIsUploadingDrag] = useState(false);
+  const dragCounter = useRef(0) //prevents ui flikering
 
   const eventUrl = window.location.href;
 
@@ -41,6 +46,65 @@ export default function EventLive() {
     fetchEvent();
   }, [eventId]);
 
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++
+
+    if(dragCounter.current == 1) {
+      const hasFiles = Array.from(e.dataTransfer.items).some(item => item.kind === 'file')
+      if(hasFiles) {
+        setIsDragging(true)
+      }
+    }
+
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+  };
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    e.stopPropagation();
+    dragCounter.current--;
+
+    if(dragCounter.current === 0) {
+      setIsDragging(false)
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    dragCounter.current = 0;
+    
+    if(isUploadingDrag) return;
+
+    const files = Array.from(e.dataTransfer.files);
+
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if(imageFiles.length === 0) {
+      alert('please drop image files only');
+      return;
+    }
+    setIsUploadingDrag(true);
+
+    try {
+      const currentUserId = user ? user.id : `guest-${Math.random().toString(36).substr(2, 9)}`
+      await Promise.all(imageFiles.map(file => uploadPhoto(eventId,file,currentUserId)));
+    }
+    catch(error) {
+      alert('some photos failed to upload. please try again');
+    }
+    finally {
+      setIsUploadingDrag(false)
+    }
+
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-theme-1 flex justify-center items-center">
@@ -61,7 +125,12 @@ export default function EventLive() {
   const isCreator = user && user.id === eventData.user_id;
 
   return (
-    <div className="w-full min-h-full bg-theme-1 text-theme-4 relative pb-20 pt-20 md:pt-0">
+    <div 
+    onDragEnter={handleDragEnter}
+    onDragOver={handleDragOver}
+    onDragLeave={handleDragLeave}
+    onDrop={handleDrop}
+    className="w-full min-h-full bg-theme-1 text-theme-4 relative pb-20 pt-20 md:pt-0">
       
       {/* Event Header */}
       <header className="px-6 py-8 border-b border-theme-3/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -117,6 +186,26 @@ export default function EventLive() {
              </button>
              <h2 className="font-heading text-3xl font-bold text-theme-4 mb-6">Scan to Join</h2>
              <QRCodeDisplay url={eventUrl} title={eventData.name} />
+          </div>
+        </div>
+      )}
+      {/* 4. DRAG AND DROP OVERLAY UI */}
+      {(isDragging || isUploadingDrag) && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-theme-1/80 backdrop-blur-sm border-4 border-dashed border-theme-3 pointer-events-none">
+          <div className="text-center p-8 bg-theme-2 rounded-3xl shadow-2xl border border-theme-3/20 max-w-md mx-4">
+            {isUploadingDrag ? (
+              <>
+                <Loader2 className="w-16 h-16 animate-spin text-theme-3 mx-auto mb-4" />
+                <p className="text-2xl font-heading font-bold text-theme-4">Uploading photos...</p>
+                <p className="text-theme-4/60 mt-2">They will appear in the gallery shortly</p>
+              </>
+            ) : (
+              <>
+                <Upload className="w-16 h-16 text-theme-3 mx-auto mb-4" />
+                <p className="text-2xl font-heading font-bold text-theme-4">Drop images to upload!</p>
+                <p className="text-theme-4/60 mt-2">Release to add them to the gallery</p>
+              </>
+            )}
           </div>
         </div>
       )}
