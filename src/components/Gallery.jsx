@@ -16,6 +16,10 @@ export default function Gallery({ eventId, eventName, isCreator }) {
   const loaderRef = useRef(null);
   const LIMIT = 50;
 
+  const [draggedPhotoId,setDraggedPhotoId] = useState(null);
+  const [isDragDeleting,setIsDragDeleting] = useState(false);
+
+
   useEffect(() => {
     if (!eventId) return;
 
@@ -160,6 +164,60 @@ export default function Gallery({ eventId, eventName, isCreator }) {
       setIsDeleting(false);
     }
   };
+  //Drag to drop
+
+  const handleDragStart = (e,photoId) => {
+    console.log("🔥 Drag started for photo:", photoId);
+  console.log("👤 isCreator value:", isCreator);
+      if (!isCreator) return;
+      e.dataTransfer.setData('text/plain',photoId);
+      e.dataTransfer.effectAllowed = 'move';
+     
+      setDraggedPhotoId(photoId);
+      console.log("✅ draggedPhotoId set to:", photoId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedPhotoId(null)
+  };
+
+  const handleDragOverTrash = (e) => {
+    e.preventDefault();
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move';
+  };
+  const handleDropOnTrash =async (e) => {
+    e.preventDefault();
+    e.stopPropagation()
+    if(!draggedPhotoId) return;
+
+    setIsDragDeleting(true);
+
+    try {
+      const photoToDelete = photos.find(p => p.id === draggedPhotoId);
+      if(!photoToDelete) return;
+
+     
+      const filePath = decodeURIComponent(photoToDelete.url.substring(photoToDelete.url.indexOf('/events/') + 8));
+
+      const {error: dbError} = await supabase.from('photos').delete().eq('id',draggedPhotoId);
+
+      if(dbError) throw dbError
+
+      setPhotos(current => current.filter(p => p.id !== draggedPhotoId));
+
+      if(filePath) {
+        await supabase.storage.from('events').remove([filePath]);
+      }
+    }
+    catch(error) {
+      alert('Failed to delete photo');
+    }
+    finally {
+      setIsDragDeleting(false)
+      setDraggedPhotoId(null)
+    }
+  };
 
   if (loading) {
     return (
@@ -218,6 +276,8 @@ export default function Gallery({ eventId, eventName, isCreator }) {
             selectionMode={selectionMode}
             isSelected={selectedIds.includes(photo.id)}
             onToggleSelect={() => toggleSelection(photo.id)}
+            isCreator={isCreator}
+            onDragStart={(e) => handleDragStart(e,photo.id)}
           />
         ))}
       </div>
@@ -265,11 +325,38 @@ export default function Gallery({ eventId, eventName, isCreator }) {
           </div>
         </div>
       )}
+
+      {/* --- DRAG TO DELETE DROP ZONE --- */}
+      {
+        draggedPhotoId && isCreator && (
+          <div className='fixed inset-0 z-40 bg-black/60 backdrop-blur-sm pointer-events-none transition-opacity duration-300'/>
+        )
+      }
+       {draggedPhotoId && isCreator && (
+        <div 
+          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center pointer-events-auto"
+          onDragOver={handleDragOverTrash}
+          onDrop={handleDropOnTrash}
+        >
+          <div className={`flex flex-col items-center justify-center w-20 h-20 rounded-full border-4 border-dashed transition-all duration-300 ${isDragDeleting ? 'bg-red-500 border-red-500 scale-110' : 'bg-red-500/20 border-red-500 hover:bg-red-500/40'}`}>
+            {isDragDeleting ? (
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            ) : (
+              <Trash2 className="w-8 h-8 text-red-500" />
+            )}
+          </div>
+          <p className="mt-2 text-red-500 font-bold bg-theme-1/80 px-3 py-1 rounded-full backdrop-blur-sm text-sm">
+            {isDragDeleting ? 'Deleting...' : 'Drop to delete'}
+          </p>
+        </div>
+      )}
     </>
   );
 }
 
-function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onToggleSelect }) {
+function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onToggleSelect,isCreator,onDragStart,onDragEnd }) {
+   console.log("PhotoCard received isCreator:", isCreator);
+  console.log("PhotoCard received onDragStart:", typeof onDragStart);
   const [showOverlay, setShowOverlay] = useState(false);
   const safeName = (eventName || 'Event').replace(/[^a-zA-Z0-9]/g, '_');
   const timeStr = (photo.created_at ? new Date(photo.created_at) : new Date()).toTimeString().split(' ')[0].replace(/:/g, '-');
@@ -304,6 +391,9 @@ function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onTo
       onMouseEnter={() => setShowOverlay(true)}
       onMouseLeave={() => setShowOverlay(false)}
       onClick={() => setShowOverlay(!showOverlay)}
+      draggable={isCreator}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
     >
       <img 
         src={photo.url} 

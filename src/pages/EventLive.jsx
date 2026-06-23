@@ -84,6 +84,8 @@ export default function EventLive() {
 
     const files = Array.from(e.dataTransfer.files);
 
+    if(files.length === 0) return
+
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
     if(imageFiles.length === 0) {
