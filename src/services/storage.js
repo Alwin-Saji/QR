@@ -16,13 +16,32 @@ export const compressImage = async (file) => {
   }
 };
 
-export const uploadPhoto = async (eventId, file, uploaderId) => {
+export const uploadPhoto = async (eventId, file, uploader) => {
+  const uploadedBy = uploader?.displayName?.trim() || uploader?.guestId || 'Guest';
+  const uploaderId = uploader?.guestId || uploadedBy;
+
+  const { data: restriction, error: restrictionError } = await supabase
+    .from('restricted_uploaders')
+    .select('id')
+    .eq('event_id', eventId)
+    .eq('uploader_id', uploaderId)
+    .maybeSingle();
+
+  if (restrictionError) {
+    console.error('Restriction check failed:', restrictionError);
+    throw restrictionError;
+  }
+
+  if (restriction) {
+    throw new Error('This guest has been restricted from uploading more photos.');
+  }
+
   const compressedFile = await compressImage(file);
   const fileName = `${Date.now()}_${compressedFile.name}`;
   const filePath = `${eventId}/${fileName}`;
 
   // Upload to Supabase Storage
-  const { data: uploadData, error: uploadError } = await supabase
+  const { error: uploadError } = await supabase
     .storage
     .from('events')
     .upload(filePath, compressedFile);
@@ -51,7 +70,8 @@ export const uploadPhoto = async (eventId, file, uploaderId) => {
       {
         event_id: eventId,
         url: downloadURL,
-        uploaded_by: uploaderId,
+        uploaded_by: uploadedBy,
+        uploader_id: uploaderId,
         expires_at: expiresAt.toISOString(),
       }
     ])

@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { Camera, Home, Calendar, Menu, X, Info, LogOut, LogIn } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Camera, Home, Calendar, Menu, X, Info, LogOut, LogIn, ShieldOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../services/supabase';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false); // Mobile toggle state
   const [isHovered, setIsHovered] = useState(false); // Desktop hover state
+  const [restrictedUploaders, setRestrictedUploaders] = useState([]);
+  const [canManageRestrictions, setCanManageRestrictions] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const eventId = location.pathname.match(/^\/event\/([^/]+)/)?.[1];
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -22,6 +27,66 @@ export default function Sidebar() {
       navigate('/');
     } else {
       navigate('/auth');
+    }
+  };
+
+  useEffect(() => {
+    if (!eventId || !user) {
+      Promise.resolve().then(() => setRestrictedUploaders([]));
+      Promise.resolve().then(() => setCanManageRestrictions(false));
+      return;
+    }
+
+    const fetchRestrictedUploaders = async () => {
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('user_id')
+        .eq('id', eventId)
+        .single();
+
+      const isCreator = !eventError && eventData?.user_id === user.id;
+      setCanManageRestrictions(isCreator);
+
+      if (!isCreator) {
+        setRestrictedUploaders([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('restricted_uploaders')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching restricted uploaders:", error);
+      } else {
+        setRestrictedUploaders(data || []);
+      }
+    };
+
+    fetchRestrictedUploaders();
+
+    const handleRestrictionChange = (event) => {
+      if (event.detail?.eventId === eventId) fetchRestrictedUploaders();
+    };
+
+    window.addEventListener('restricted-uploaders-changed', handleRestrictionChange);
+    return () => window.removeEventListener('restricted-uploaders-changed', handleRestrictionChange);
+  }, [eventId, user]);
+
+  const handleUnrestrictUploader = async (uploaderId) => {
+    const { error } = await supabase
+      .from('restricted_uploaders')
+      .delete()
+      .eq('event_id', eventId)
+      .eq('uploader_id', uploaderId);
+
+    if (error) {
+      console.error("Error unrestricting uploader:", error);
+      alert("Failed to unrestrict uploader.");
+    } else {
+      setRestrictedUploaders(current => current.filter(item => item.uploader_id !== uploaderId));
     }
   };
 
@@ -89,6 +154,58 @@ export default function Sidebar() {
               </span>
             </NavLink>
           ))}
+
+          {canManageRestrictions && (
+            <div className="pt-4 border-t border-theme-3/20">
+              {isHovered || isOpen ? (
+                <div className="rounded-xl border border-red-300/30 bg-theme-1/40 p-3 shadow-inner">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <ShieldOff className="h-5 w-5 flex-shrink-0 text-red-200" />
+                      <p className="truncate text-xs font-bold uppercase tracking-wide text-theme-4">
+                        Restricted Guests
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-red-400/20 px-2 py-0.5 text-xs font-bold text-red-100">
+                      {restrictedUploaders.length}
+                    </span>
+                  </div>
+
+                  {restrictedUploaders.length > 0 ? (
+                    <div className="space-y-2">
+                      {restrictedUploaders.map((uploader) => (
+                        <button
+                          key={uploader.uploader_id}
+                          onClick={() => handleUnrestrictUploader(uploader.uploader_id)}
+                          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-theme-4 hover:bg-red-400/10 transition-all"
+                          title={`Unrestrict ${uploader.display_name || uploader.uploader_id}`}
+                        >
+                          <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_0_3px_rgba(248,113,113,0.15)]" />
+                          <span className="min-w-0 flex-1 truncate text-sm font-bold">
+                            {uploader.display_name || uploader.uploader_id}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-lg border border-dashed border-theme-3/30 px-3 py-4 text-sm font-bold text-theme-4/70">
+                      No guests are restricted.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className="relative mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-red-400/10 text-red-200"
+                  title={`Restricted Guests: ${restrictedUploaders.length}`}
+                >
+                  <ShieldOff className="h-5 w-5" />
+                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-300 px-1.5 py-0.5 text-center text-xs font-bold leading-none text-theme-1">
+                    {restrictedUploaders.length}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </nav>
         
         {/* Footer Actions */}

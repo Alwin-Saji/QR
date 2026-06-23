@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '../services/supabase';
 import { QRCodeSVG } from 'qrcode.react';
-import { Download, QrCode, X, Trash2, CheckCircle2 } from 'lucide-react';
+import { Download, QrCode, X, Trash2, CheckCircle2, Ban } from 'lucide-react';
 
 export default function Gallery({ eventId, eventName, isCreator }) {
   const [photos, setPhotos] = useState([]);
@@ -20,9 +20,6 @@ export default function Gallery({ eventId, eventName, isCreator }) {
 
   useEffect(() => {
     if (!eventId) return;
-
-    setPage(0);
-    setHasMore(true);
 
     const fetchPhotos = async (pageNum = 0) => {
       if (pageNum === 0) setLoading(true);
@@ -46,6 +43,10 @@ export default function Gallery({ eventId, eventName, isCreator }) {
       else setLoadingMore(false);
     };
 
+    Promise.resolve().then(() => {
+      setPage(0);
+      setHasMore(true);
+    });
     fetchPhotos(0);
 
     // Subscribe to real-time changes
@@ -73,6 +74,7 @@ export default function Gallery({ eventId, eventName, isCreator }) {
       supabase.removeChannel(channel);
     };
   }, [eventId]);
+
   // Infinite scroll observer
   useEffect(() => {
     if (!hasMore || loadingMore) return;
@@ -166,6 +168,24 @@ export default function Gallery({ eventId, eventName, isCreator }) {
     }
   };
 
+  const handleRestrictUploader = async (photo) => {
+    const uploaderId = photo.uploader_id?.trim() || photo.uploaded_by?.trim();
+    const uploaderName = photo.uploaded_by?.trim() || uploaderId || 'Guest';
+    if (!uploaderId) return;
+    if (!window.confirm(`Restrict ${uploaderName} from uploading more photos? Existing photos will stay visible.`)) return;
+
+    const { error } = await supabase
+      .from('restricted_uploaders')
+      .insert([{ event_id: eventId, uploader_id: uploaderId, display_name: uploaderName }]);
+
+    if (error && error.code !== '23505') {
+      console.error("Error restricting uploader:", error);
+      alert("Failed to restrict uploader.");
+    } else {
+      window.dispatchEvent(new CustomEvent('restricted-uploaders-changed', { detail: { eventId } }));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -192,7 +212,7 @@ export default function Gallery({ eventId, eventName, isCreator }) {
           </p>
           <div className="flex gap-2">
             {selectionMode && (
-              <button 
+              <button
                 onClick={handleBulkDelete}
                 disabled={selectedIds.length === 0 || isDeleting}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full font-bold transition-all disabled:opacity-50"
@@ -200,7 +220,7 @@ export default function Gallery({ eventId, eventName, isCreator }) {
                 {isDeleting ? "Deleting..." : <><Trash2 className="w-4 h-4" /> Delete ({selectedIds.length})</>}
               </button>
             )}
-            <button 
+            <button
               onClick={() => {
                 setSelectionMode(!selectionMode);
                 setSelectedIds([]);
@@ -223,6 +243,8 @@ export default function Gallery({ eventId, eventName, isCreator }) {
             selectionMode={selectionMode}
             isSelected={selectedIds.includes(photo.id)}
             onToggleSelect={() => toggleSelection(photo.id)}
+            isCreator={isCreator}
+            onRestrictUploader={() => handleRestrictUploader(photo)}
           />
         ))}
       </div>
@@ -274,11 +296,12 @@ export default function Gallery({ eventId, eventName, isCreator }) {
   );
 }
 
-function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onToggleSelect }) {
+function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onToggleSelect, isCreator, onRestrictUploader }) {
   const [showOverlay, setShowOverlay] = useState(false);
   const safeName = (eventName || 'Event').replace(/[^a-zA-Z0-9]/g, '_');
   const timeStr = (photo.created_at ? new Date(photo.created_at) : new Date()).toTimeString().split(' ')[0].replace(/:/g, '-');
   const downloadName = `${safeName}_${timeStr}.jpg`;
+  const uploadedBy = photo.uploaded_by?.trim() || photo.uploader_id?.trim() || 'Guest';
 
   if (selectionMode) {
     return (
@@ -316,6 +339,9 @@ function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onTo
         className={`w-full h-full object-cover transition-transform duration-500 ${showOverlay ? 'scale-110' : ''}`}
         loading="lazy"
       />
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 to-transparent px-4 py-3 pointer-events-none">
+        <p className="text-white text-sm font-bold truncate">Uploaded by {uploadedBy}</p>
+      </div>
 
       {/* Hover Controls */}
       <div 
@@ -349,6 +375,22 @@ function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onTo
             </div>
             <span className="text-xs font-bold shadow-black drop-shadow-md">Scan QR</span>
          </button>
+
+         {isCreator && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRestrictUploader();
+            }}
+            className="flex flex-col items-center justify-center text-white hover:text-red-200 transition-colors"
+            title={`Restrict ${uploadedBy}`}
+          >
+            <div className="bg-red-500/30 p-3 rounded-full backdrop-blur-md mb-2 hover:bg-red-500/40 transition-colors">
+              <Ban className="w-6 h-6" />
+            </div>
+            <span className="text-xs font-bold shadow-black drop-shadow-md">Restrict</span>
+          </button>
+         )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../services/supabase';
@@ -8,11 +8,25 @@ import QRCodeDisplay from '../components/QRCodeDisplay';
 import { QrCode, Share2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
+const getOrCreateGuestId = (eventId) => {
+  if (!eventId) return '';
+
+  const storageKey = `arc-guest-id-${eventId}`;
+  const existingGuestId = window.localStorage.getItem(storageKey);
+
+  if (existingGuestId) return existingGuestId;
+
+  const newGuestId = `guest-${Math.random().toString(36).substr(2, 9)}`;
+  window.localStorage.setItem(storageKey, newGuestId);
+  return newGuestId;
+};
+
 export default function EventLive() {
   const { eventId } = useParams();
   const [eventData, setEventData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showQR, setShowQR] = useState(false);
+  const [guestId] = useState(() => getOrCreateGuestId(eventId));
   const { user } = useAuth();
 
   const eventUrl = window.location.href;
@@ -111,7 +125,7 @@ export default function EventLive() {
       </main>
 
       {/* Floating Action Button for Camera Capture */}
-      <CameraCapture eventId={eventId} userId={`guest-${Math.random().toString(36).substr(2, 9)}`} />
+      <CameraCapture eventId={eventId} guestId={guestId} />
 
       {/* QR Code Modal Overlay */}
       {showQR && (
