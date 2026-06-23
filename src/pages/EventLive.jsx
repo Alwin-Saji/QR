@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { supabase } from '../services/supabase';
 import { uploadPhoto } from '../services/storage';
 import Gallery from '../components/Gallery';
@@ -148,15 +149,22 @@ export default function EventLive() {
             <span className="hidden sm:inline">QR Code</span>
           </button>
           <button 
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: eventData.name,
-                  url: eventUrl
-                });
-              } else {
-                navigator.clipboard.writeText(eventUrl);
-                alert("Link copied to clipboard!");
+            onClick={async () => {
+              try {
+                if (navigator.share) {
+                  await navigator.share({
+                    title: eventData.name,
+                    url: eventUrl,
+                  });
+                } else {
+                  await navigator.clipboard.writeText(eventUrl);
+                  toast.success('Event link copied!');
+                }
+              } catch (error) {
+                if (error.name !== 'AbortError') {
+                  console.error('Error sharing event:', error);
+                  toast.error('Could not share the event');
+                }
               }
             }}
             className="flex items-center gap-2 px-4 py-2 bg-theme-2 text-theme-4 border border-theme-3/20 rounded-full hover:bg-theme-3 hover:text-theme-1 hover:border-theme-3 font-bold transition-all shadow-sm"

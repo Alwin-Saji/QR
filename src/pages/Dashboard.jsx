@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Plus, Calendar, ArrowRight, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -52,11 +53,12 @@ export default function Dashboard() {
       if (error) throw error;
       
       if (data && data.length > 0) {
+        toast.success('Event created successfully!');
         navigate(`/event/${data[0].id}`);
       }
     } catch (error) {
       console.error("Error creating event: ", error);
-      alert("Failed to create event. Please check your Supabase configuration.");
+      toast.error('Failed to create event. Please check your Supabase configuration.');
     } finally {
       setIsCreating(false);
     }
@@ -78,9 +80,10 @@ export default function Dashboard() {
       
       // Update local state to remove the deleted event
       setEvents(events.filter(event => event.id !== eventId));
+      toast.success('Event deleted');
     } catch (error) {
       console.error("Error deleting event:", error);
-      alert("Failed to delete event.");
+      toast.error('Failed to delete event');
     }
   };
 

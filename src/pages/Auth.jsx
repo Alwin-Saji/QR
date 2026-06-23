@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -34,6 +35,7 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
+        toast.success('Welcome back!');
         navigate('/dashboard');
       } else {
         const { error } = await supabase.auth.signUp({
@@ -41,11 +43,12 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
-        alert('Registration successful! You can now log in.');
+        toast.success('Registration successful! You can now log in.');
         setIsLogin(true);
       }
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }

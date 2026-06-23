@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -29,6 +30,23 @@ function App() {
               <Route path="/event/:eventId" element={<EventLive />} />
             </Routes>
           </div>
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#995F2F',
+                color: '#E4D6A9',
+                border: '1px solid #978F66',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#E4D6A9',
+                  secondary: '#622B14',
+                },
+              },
+            }}
+          />
         </div>
       </BrowserRouter>
     </AuthProvider>

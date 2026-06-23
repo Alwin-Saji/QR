@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, Copy, Settings2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function QRCodeDisplay({ url, title = "Join Event" }) {
   const [fgColor, setFgColor] = useState('#000000');
@@ -22,6 +23,17 @@ export default function QRCodeDisplay({ url, title = "Join Event" }) {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
+    toast.success('QR code downloaded!');
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Event link copied!');
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast.error('Could not copy the link');
+    }
   };
 
   return (
@@ -47,7 +59,7 @@ export default function QRCodeDisplay({ url, title = "Join Event" }) {
 
       <div className="flex gap-2 w-full mb-6">
         <button 
-          onClick={() => navigator.clipboard.writeText(url)}
+          onClick={copyLink}
           className="flex-1 flex items-center justify-center gap-2 bg-theme-1 text-theme-4 font-bold px-4 py-3 rounded-xl border border-theme-3/20 hover:bg-theme-3/10 transition-colors"
         >
           <Copy className="w-5 h-5" /> Copy Link
