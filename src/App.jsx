@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
+import { SyncProvider } from './contexts/SyncContext';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import EventLive from './pages/EventLive';
@@ -12,7 +13,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <SyncProvider>
+        <BrowserRouter>
         <div className="flex min-h-screen bg-theme-1 text-theme-4 font-sans">
           <Sidebar />
           <div className="flex-1 w-full relative overflow-x-hidden">
@@ -49,6 +51,7 @@ function App() {
           />
         </div>
       </BrowserRouter>
+      </SyncProvider>
     </AuthProvider>
   );
 }

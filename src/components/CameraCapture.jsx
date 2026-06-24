@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
-import { Camera, Check, Image as ImageIcon, Loader2, Pencil, UserRound, X } from 'lucide-react';
+import { Camera, Check, Image as ImageIcon, Loader2, Pencil, UserRound, X, WifiOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { updateDisplayName, uploadPhoto } from '../services/storage';
+import { useSync } from '../contexts/SyncContext';
 
 export default function CameraCapture({ eventId, guestId, isCreator }) {
   const [uploadState, setUploadState] = useState({ uploading: false, done: 0, total: 0 });
+  const { isOnline, queueCount, syncing, notifyItemQueued } = useSync();
   const displayNameStorageKey = eventId && guestId ? `arc-display-name-${eventId}-${guestId}` : '';
   const [displayName, setDisplayName] = useState(() => {
     if (!displayNameStorageKey) return '';
@@ -100,11 +102,14 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
 
     for (let i = 0; i < files.length; i += 1) {
       try {
-        await uploadPhoto(eventId, files[i], {
+        const result = await uploadPhoto(eventId, files[i], {
           displayName,
           guestId,
           isCreator,
         });
+        if (result?.offline) {
+          notifyItemQueued();
+        }
       } catch (error) {
         failedUploads += 1;
         console.error('Upload failed for', files[i].name, error);
@@ -117,7 +122,11 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
     setUploadState({ uploading: false, done: 0, total: 0 });
 
     if (failedUploads === 0) {
-      toast.success(files.length === 1 ? 'Photo uploaded!' : `${files.length} photos uploaded!`);
+      if (!isOnline) {
+        toast.success(files.length === 1 ? 'Photo saved to queue!' : `${files.length} photos saved to queue!`);
+      } else {
+        toast.success(files.length === 1 ? 'Photo uploaded!' : `${files.length} photos uploaded!`);
+      }
     } else {
       toast.error(`${failedUploads} upload${failedUploads === 1 ? '' : 's'} failed`);
     }
@@ -144,6 +153,16 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
         onChange={handleFileChange}
         disabled={uploading}
       />
+
+      {(!isOnline || queueCount > 0) && (
+        <div className="flex items-center justify-center gap-2 mb-3 bg-yellow-500/20 text-yellow-200 text-xs px-3 py-1.5 rounded-full border border-yellow-500/30">
+          {syncing ? (
+            <><Loader2 className="w-3 h-3 animate-spin" /> Syncing {queueCount} photos...</>
+          ) : (
+            <><WifiOff className="w-3 h-3" /> {queueCount > 0 ? `${queueCount} waiting to sync` : 'Offline'}</>
+          )}
+        </div>
+      )}
 
       {uploading ? (
         <div className="flex items-center justify-center gap-3 px-6 py-2">

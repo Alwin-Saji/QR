@@ -1,5 +1,6 @@
 import imageCompression from 'browser-image-compression';
 import { supabase } from './supabase';
+import { savePhotoToQueue } from './offlineQueue';
 
 export const compressImage = async (file) => {
   const options = {
@@ -38,79 +39,99 @@ export const updateDisplayName = async (eventId, guestId, displayName, options =
   return data?.trim() || nextDisplayName;
 };
 
-export const uploadPhoto = async (eventId, file, uploader) => {
+export const uploadPhoto = async (eventId, file, uploader, options = {}) => {
   let uploadedBy = uploader?.displayName?.trim() || uploader?.guestId || 'Guest';
   const uploaderId = uploader?.guestId || uploadedBy;
-  const shouldRefreshDisplayName = Boolean(uploader?.displayName?.trim() && uploaderId);
 
-  const { data: restriction, error: restrictionError } = await supabase
-    .from('restricted_uploaders')
-    .select('id')
-    .eq('event_id', eventId)
-    .eq('uploader_id', uploaderId)
-    .maybeSingle();
-
-  if (restrictionError) {
-    console.error('Restriction check failed:', restrictionError);
-    throw restrictionError;
+  if (!navigator.onLine) {
+    if (!options.preventRequeue) {
+      console.log("Offline mode detected. Saving photo to queue.");
+      await savePhotoToQueue({ eventId, file, uploader });
+    }
+    return { offline: true };
   }
 
-  if (restriction) {
-    throw new Error('This guest has been restricted from uploading more photos.');
-  }
+  try {
+    const shouldRefreshDisplayName = Boolean(uploader?.displayName?.trim() && uploaderId);
 
-  if (shouldRefreshDisplayName) {
-    uploadedBy = await updateDisplayName(eventId, uploaderId, uploadedBy, {
-      isCreator: uploader?.isCreator,
-    });
-  }
+    const { data: restriction, error: restrictionError } = await supabase
+      .from('restricted_uploaders')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('uploader_id', uploaderId)
+      .maybeSingle();
 
-  const compressedFile = await compressImage(file);
-  const fileName = `${Date.now()}_${compressedFile.name}`;
-  const filePath = `${eventId}/${fileName}`;
+    if (restrictionError) {
+      console.error('Restriction check failed:', restrictionError);
+      throw restrictionError;
+    }
 
-  // Upload to Supabase Storage
-  const { error: uploadError } = await supabase
-    .storage
-    .from('events')
-    .upload(filePath, compressedFile);
+    if (restriction) {
+      throw new Error('This guest has been restricted from uploading more photos.');
+    }
 
-  if (uploadError) {
-    console.error('Upload failed:', uploadError);
-    throw uploadError;
-  }
+    if (shouldRefreshDisplayName) {
+      uploadedBy = await updateDisplayName(eventId, uploaderId, uploadedBy, {
+        isCreator: uploader?.isCreator,
+      });
+    }
 
-  // Get public URL
-  const { data: publicUrlData } = supabase
-    .storage
-    .from('events')
-    .getPublicUrl(filePath);
+    const compressedFile = await compressImage(file);
+    const fileName = `${Date.now()}_${compressedFile.name}`;
+    const filePath = `${eventId}/${fileName}`;
 
-  const downloadURL = publicUrlData.publicUrl;
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase
+      .storage
+      .from('events')
+      .upload(filePath, compressedFile);
 
-  // 1-day TTL
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 1);
+    if (uploadError) {
+      console.error('Upload failed:', uploadError);
+      throw uploadError;
+    }
 
-  // Insert record into Supabase Database
-  const { data: dbData, error: dbError } = await supabase
-    .from('photos')
-    .insert([
-      {
-        event_id: eventId,
-        url: downloadURL,
-        uploaded_by: uploadedBy,
-        uploader_id: uploaderId,
-        expires_at: expiresAt.toISOString(),
+    // Get public URL
+    const { data: publicUrlData } = supabase
+      .storage
+      .from('events')
+      .getPublicUrl(filePath);
+
+    const downloadURL = publicUrlData.publicUrl;
+
+    // 1-day TTL
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 1);
+
+    // Insert record into Supabase Database
+    const { data: dbData, error: dbError } = await supabase
+      .from('photos')
+      .insert([
+        {
+          event_id: eventId,
+          url: downloadURL,
+          uploaded_by: uploadedBy,
+          uploader_id: uploaderId,
+          expires_at: expiresAt.toISOString(),
+        }
+      ])
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error('Database record failed:', dbError);
+      throw dbError;
+    }
+
+    return { id: dbData.id, url: dbData.url };
+  } catch (error) {
+    if (error.message === 'Failed to fetch' || !navigator.onLine) {
+      if (!options.preventRequeue) {
+        console.log("Network error. Saving photo to offline queue.");
+        await savePhotoToQueue({ eventId, file, uploader });
       }
-    ])
-    .select()
-    .single();
-
-  if (dbError) {
-    console.error('Database record failed:', dbError);
-    throw dbError;
+      return { offline: true };
+    }
+    throw error;
   }
-
-  return { id: dbData.id, url: dbData.url };
 };
