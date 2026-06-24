@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { updateDisplayName, uploadPhoto } from '../services/storage';
 
 export default function CameraCapture({ eventId, guestId, isCreator }) {
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadState, setUploadState] = useState({ uploading: false, done: 0, total: 0 });
   const displayNameStorageKey = eventId && guestId ? `arc-display-name-${eventId}-${guestId}` : '';
   const [displayName, setDisplayName] = useState(() => {
     if (!displayNameStorageKey) return '';
@@ -17,6 +17,8 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
   const [uploadMessage, setUploadMessage] = useState('');
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+
+  const { uploading, done, total } = uploadState;
 
   useEffect(() => {
     if (!displayNameStorageKey) return;
@@ -87,37 +89,42 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
   };
 
   const handleFileChange = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
 
-    try {
-      setIsUploading(true);
-      setUploadMessage('');
-      await toast.promise(
-        uploadPhoto(eventId, file, {
+    event.target.value = '';
+    setUploadState({ uploading: true, done: 0, total: files.length });
+    setUploadMessage('');
+
+    let failedUploads = 0;
+
+    for (let i = 0; i < files.length; i += 1) {
+      try {
+        await uploadPhoto(eventId, files[i], {
           displayName,
           guestId,
           isCreator,
-        }),
-        {
-          loading: 'Uploading photo...',
-          success: 'Photo uploaded!',
-          error: (error) => error.message || 'Photo upload failed',
-        }
-      );
-    } catch (error) {
-      console.error("Upload failed", error);
-      setUploadMessage(error.message || 'Upload failed. Please try again.');
-    } finally {
-      setIsUploading(false);
-      event.target.value = '';
+        });
+      } catch (error) {
+        failedUploads += 1;
+        console.error('Upload failed for', files[i].name, error);
+        setUploadMessage(error.message || 'Some photos failed to upload.');
+      }
+
+      setUploadState({ uploading: true, done: i + 1, total: files.length });
+    }
+
+    setUploadState({ uploading: false, done: 0, total: 0 });
+
+    if (failedUploads === 0) {
+      toast.success(files.length === 1 ? 'Photo uploaded!' : `${files.length} photos uploaded!`);
+    } else {
+      toast.error(`${failedUploads} upload${failedUploads === 1 ? '' : 's'} failed`);
     }
   };
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-2/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-theme-3/20 shadow-2xl w-[min(92vw,430px)]">
-      
-      {/* Hidden input for Camera */}
       <input
         type="file"
         accept="image/*"
@@ -125,23 +132,25 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
         className="hidden"
         ref={cameraInputRef}
         onChange={handleFileChange}
-        disabled={isUploading}
+        disabled={uploading}
       />
 
-      {/* Hidden input for File Storage / Gallery */}
       <input
         type="file"
         accept="image/*"
+        multiple
         className="hidden"
         ref={galleryInputRef}
         onChange={handleFileChange}
-        disabled={isUploading}
+        disabled={uploading}
       />
 
-      {isUploading ? (
+      {uploading ? (
         <div className="flex items-center justify-center gap-3 px-6 py-2">
           <Loader2 className="w-8 h-8 animate-spin text-theme-3" />
-          <span className="text-theme-4 font-bold">Uploading...</span>
+          <span className="text-theme-4 font-bold">
+            {total > 1 ? `Uploading ${done}/${total}...` : 'Uploading...'}
+          </span>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -193,7 +202,7 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
             {!isEditingName && (
               <button
                 onClick={handleStartNameEdit}
-                disabled={isUploading}
+                disabled={uploading}
                 title={displayName ? `Display name: ${displayName}` : 'Set display name'}
                 className="h-14 min-w-0 max-w-[170px] bg-theme-1 hover:bg-theme-1/80 text-theme-4 border border-theme-3/20 rounded-full px-4 shadow-sm flex items-center gap-2 justify-center transition-all disabled:opacity-50 transform hover:scale-105 active:scale-95"
               >
@@ -203,16 +212,16 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
             )}
             <button
               onClick={handleGalleryClick}
-              disabled={isUploading}
-              title="Upload from Storage"
+              disabled={uploading}
+              title="Upload from Gallery"
               className="w-14 h-14 bg-theme-1 hover:bg-theme-1/80 text-theme-4 border border-theme-3/20 rounded-full shadow-sm flex items-center justify-center transition-all disabled:opacity-50 transform hover:scale-105 active:scale-95"
             >
               <ImageIcon className="w-5 h-5" />
             </button>
-            
+
             <button
               onClick={handleCameraClick}
-              disabled={isUploading}
+              disabled={uploading}
               title="Take Photo"
               className="w-14 h-14 bg-theme-3 hover:bg-theme-4 text-theme-1 rounded-full shadow-lg flex items-center justify-center transition-all disabled:opacity-50 transform hover:scale-105 active:scale-95"
             >
