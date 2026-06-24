@@ -126,17 +126,25 @@ export default function EventLive() {
     setIsUploadingDrag(true);
 
     try {
-      await Promise.all(imageFiles.map((file) => (
-        uploadPhoto(eventId, file, {
-          displayName,
-          guestId,
-          isCreator,
-        })
-      )));
-      toast.success(imageFiles.length === 1 ? 'Photo uploaded!' : `${imageFiles.length} photos uploaded!`);
-    } catch (error) {
-      console.error('Drag upload failed:', error);
-      toast.error(error.message || 'Some photos failed to upload. Please try again.');
+      let failedUploads = 0;
+      for (const file of imageFiles) {
+        try {
+          await uploadPhoto(eventId, file, {
+            displayName,
+            guestId,
+            isCreator,
+          });
+        } catch (err) {
+          failedUploads += 1;
+          console.error('Upload failed for', file.name, err);
+        }
+      }
+
+      if (failedUploads === 0) {
+        toast.success(imageFiles.length === 1 ? 'Photo uploaded!' : `${imageFiles.length} photos uploaded!`);
+      } else {
+        toast.error(`${failedUploads} upload${failedUploads === 1 ? '' : 's'} failed`);
+      }
     } finally {
       setIsUploadingDrag(false);
     }

@@ -124,7 +124,7 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-2/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-theme-3/20 shadow-2xl w-[min(92vw,430px)]">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-2/90 backdrop-blur-md px-4 py-3 rounded-4xl border border-theme-3/20 shadow-2xl w-fit">
       <input
         type="file"
         accept="image/*"
