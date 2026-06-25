@@ -3,11 +3,13 @@ import toast from 'react-hot-toast';
 import { supabase } from '../services/supabase';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, QrCode, X, Trash2, CheckCircle2, Ban } from 'lucide-react';
+import PhotoLightbox from './PhotoLightbox';
 
 export default function Gallery({ eventId, eventName, isCreator, currentUploaderId }) {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhotoForQR, setSelectedPhotoForQR] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -241,6 +243,22 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
     setRemoveRestrictedPhotos(false);
   };
 
+  const closeLightbox = () => setLightboxIndex(null);
+
+  const showPreviousPhoto = () => {
+    setLightboxIndex((current) => {
+      if (current === null || photos.length === 0) return current;
+      return current === 0 ? photos.length - 1 : current - 1;
+    });
+  };
+
+  const showNextPhoto = () => {
+    setLightboxIndex((current) => {
+      if (current === null || photos.length === 0) return current;
+      return current === photos.length - 1 ? 0 : current + 1;
+    });
+  };
+
   const closeRestrictionModal = () => {
     if (isRestricting) return;
     setRestrictionTarget(null);
@@ -347,12 +365,13 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4 pb-24">
-        {photos.map((photo) => (
+        {photos.map((photo, index) => (
           <PhotoCard
             key={photo.id}
             photo={photo}
             eventName={eventName}
             onShowQR={() => setSelectedPhotoForQR(photo)}
+            onOpenLightbox={() => setLightboxIndex(index)}
             selectionMode={selectionMode}
             isSelected={selectedIds.includes(photo.id)}
             onToggleSelect={() => toggleSelection(photo.id)}
@@ -374,9 +393,22 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
         )}
       </div>
 
+      <PhotoLightbox
+        photos={photos}
+        currentIndex={lightboxIndex}
+        eventName={eventName}
+        onClose={closeLightbox}
+        onPrevious={showPreviousPhoto}
+        onNext={showNextPhoto}
+        onShowQR={(photo) => {
+          setSelectedPhotoForQR(photo);
+          closeLightbox();
+        }}
+      />
+
       {selectedPhotoForQR && (
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4"
           onClick={() => setSelectedPhotoForQR(null)}
         >
           <div
@@ -514,8 +546,9 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
   );
 }
 
-function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onToggleSelect, isCreator, currentUploaderId, onRestrictUploader, onDragStart, onDragEnd }) {
+function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, isSelected, onToggleSelect, isCreator, currentUploaderId, onRestrictUploader, onDragStart, onDragEnd }) {
   const [showOverlay, setShowOverlay] = useState(false);
+  const [isDraggingCard, setIsDraggingCard] = useState(false);
   const safeName = (eventName || 'Event').replace(/[^a-zA-Z0-9]/g, '_');
   const timeStr = (photo.created_at ? new Date(photo.created_at) : new Date()).toTimeString().split(' ')[0].replace(/:/g, '-');
   const downloadName = `${safeName}_${timeStr}.jpg`;
@@ -550,10 +583,19 @@ function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onTo
       className="relative aspect-square rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:shadow-theme-3/20 transition-all duration-300 cursor-pointer"
       onMouseEnter={() => setShowOverlay(true)}
       onMouseLeave={() => setShowOverlay(false)}
-      onClick={() => setShowOverlay(!showOverlay)}
+      onClick={() => {
+        if (isDraggingCard) return;
+        onOpenLightbox();
+      }}
       draggable={isCreator}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      onDragStart={(event) => {
+        setIsDraggingCard(true);
+        onDragStart(event);
+      }}
+      onDragEnd={(event) => {
+        onDragEnd(event);
+        setTimeout(() => setIsDraggingCard(false), 0);
+      }}
     >
       <img
         src={photo.url}
@@ -567,7 +609,6 @@ function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onTo
 
       <div
         className={`absolute inset-0 bg-black/40 transition-opacity duration-300 flex items-center justify-center gap-4 ${showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={(e) => e.stopPropagation()}
       >
          <a
           href={`${photo.url}?download=${downloadName}`}
@@ -576,6 +617,7 @@ function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onTo
           rel="noreferrer"
           className="flex flex-col items-center justify-center text-white hover:text-theme-3 transition-colors"
           title="Download Directly"
+          onClick={(e) => e.stopPropagation()}
          >
             <div className="bg-white/20 p-3 rounded-full backdrop-blur-md mb-2 hover:bg-white/30 transition-colors">
               <Download className="w-6 h-6" />
@@ -616,3 +658,4 @@ function PhotoCard({ photo, eventName, onShowQR, selectionMode, isSelected, onTo
     </div>
   );
 }
+
