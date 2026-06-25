@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Camera, Home, Calendar, Menu, X, Info, LogOut, LogIn, ShieldOff } from 'lucide-react';
+import { Camera, Home, Calendar, Menu, X, Info, LogOut, LogIn, ShieldOff, Unlock, UserX } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 
@@ -93,7 +93,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile Toggle Button */}
-      <button 
+      <button
         onClick={toggleSidebar}
         className="md:hidden fixed top-4 left-4 z-50 p-2 bg-theme-3 text-theme-1 rounded-md shadow-md hover:bg-theme-4 transition-colors"
       >
@@ -102,7 +102,7 @@ export default function Sidebar() {
 
       {/* Overlay for mobile */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
           onClick={toggleSidebar}
         />
@@ -112,7 +112,7 @@ export default function Sidebar() {
       <div className="hidden md:block w-20 flex-shrink-0 transition-all duration-300" />
 
       {/* Sidebar Container */}
-      <aside 
+      <aside
         className={`fixed top-0 left-0 h-screen bg-theme-2 border-r border-theme-3/20 flex flex-col z-40 transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'} 
           ${isHovered ? 'md:w-64 shadow-2xl' : 'md:w-20'}
@@ -127,7 +127,7 @@ export default function Sidebar() {
             ARC
           </span>
         </div>
-        
+
         {/* Navigation Links */}
         <nav className="p-4 flex-1 space-y-2 overflow-x-hidden overflow-y-auto">
           {navItems.map((item) => (
@@ -136,12 +136,10 @@ export default function Sidebar() {
               to={item.path}
               onClick={() => setIsOpen(false)}
               className={({ isActive }) =>
-                `flex items-center rounded-lg font-bold transition-all duration-300 ${
-                  isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
-                } ${
-                  isActive 
-                    ? 'bg-theme-3/20 text-theme-3' 
-                    : 'text-theme-4/80 hover:bg-theme-1/50 hover:text-theme-4'
+                `flex items-center rounded-lg font-bold transition-all duration-300 ${isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
+                } ${isActive
+                  ? 'bg-theme-3/20 text-theme-3'
+                  : 'text-theme-4/80 hover:bg-theme-1/50 hover:text-theme-4'
                 }`
               }
               title={(!isHovered && !isOpen) ? item.name : ""}
@@ -156,65 +154,71 @@ export default function Sidebar() {
           ))}
 
           {canManageRestrictions && (
-            <div className="pt-4 border-t border-theme-3/20">
+            <div className="pt-4 border-t border-theme-3/20 mt-2">
               {isHovered || isOpen ? (
-                <div className="rounded-xl border border-red-300/30 bg-theme-1/40 p-3 shadow-inner">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <ShieldOff className="h-5 w-5 flex-shrink-0 text-red-200" />
-                      <p className="truncate text-xs font-bold uppercase tracking-wide text-theme-4">
-                        Restricted Guests
-                      </p>
+                <div className="rounded-xl border border-theme-1 bg-theme-3/5 overflow-hidden transition-all duration-300">
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-theme-3 border-b border-theme-3/20">
+                    <div className="flex items-center gap-2">
+                      <ShieldOff className="w-4 h-4 text-theme-4" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-theme-4">
+                        Restricted
+                      </span>
                     </div>
-                    <span className="rounded-full bg-red-400/20 px-2 py-0.5 text-xs font-bold text-red-100">
+                    <span className="flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-md bg-theme-4 text-theme-1 text-[10px] font-bold">
                       {restrictedUploaders.length}
                     </span>
                   </div>
 
                   {restrictedUploaders.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="p-2 space-y-1 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-theme-3/30 scrollbar-track-transparent">
                       {restrictedUploaders.map((uploader) => (
-                        <button
+                        <div
                           key={uploader.uploader_id}
-                          onClick={() => handleUnrestrictUploader(uploader.uploader_id)}
-                          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left text-theme-4 hover:bg-red-400/10 transition-all"
-                          title={`Unrestrict ${uploader.display_name || uploader.uploader_id}`}
+                          className="group flex items-center justify-between px-2 py-2 rounded-lg hover:bg-theme-3/10 transition-colors"
                         >
-                          <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_0_3px_rgba(248,113,113,0.15)]" />
-                          <span className="min-w-0 flex-1 truncate text-sm font-bold">
+                          <span className="truncate text-sm font-medium text-theme-4/80 group-hover:text-theme-4 transition-colors">
                             {uploader.display_name || uploader.uploader_id}
                           </span>
-                        </button>
+                          <button
+                            onClick={() => handleUnrestrictUploader(uploader.uploader_id)}
+                            className="text-theme-4 group-hover:text-theme-1 opacity-80 group-hover:opacity-100 transition-all p-1"
+                            title="Restore Access"
+                          >
+                            <Unlock className="w-4 h-4" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="rounded-lg border border-dashed border-theme-3/30 px-3 py-4 text-sm font-bold text-theme-4/70">
-                      No guests are restricted.
-                    </p>
+                    <div className="px-3 py-4 text-center">
+                      <span className="text-xs font-medium text-theme-4/50">No restricted users</span>
+                    </div>
                   )}
                 </div>
               ) : (
                 <div
-                  className="relative mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-red-400/10 text-red-200"
+                  className="flex items-center justify-center w-12 h-12 mx-auto rounded-xl border border-theme-4/40 bg-theme-3/5 text-theme-4 hover:bg-theme-3/20 transition-all duration-300 cursor-pointer relative"
                   title={`Restricted Guests: ${restrictedUploaders.length}`}
+                  onClick={() => setIsOpen(true)}
                 >
-                  <ShieldOff className="h-5 w-5" />
-                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-300 px-1.5 py-0.5 text-center text-xs font-bold leading-none text-theme-1">
-                    {restrictedUploaders.length}
-                  </span>
+                  <ShieldOff className="w-5 h-5" />
+                  {restrictedUploaders.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 bg-theme-3 text-theme-1 text-[10px] font-bold rounded-full border-2 border-theme-2 shadow-sm">
+                      {restrictedUploaders.length}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
           )}
         </nav>
-        
+
         {/* Footer Actions */}
         <div className="p-4 border-t border-theme-3/20 flex flex-col gap-2">
-          <button 
+          <button
             onClick={handleAuthAction}
-            className={`flex items-center rounded-lg font-bold transition-all duration-300 ${
-              isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
-            } ${user ? 'text-red-400 hover:bg-red-400/10' : 'text-theme-3 hover:bg-theme-3/10'}`}
+            className={`flex items-center rounded-lg font-bold transition-all duration-300 ${isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
+              } ${user ? 'text-red-400 hover:bg-red-400/10' : 'text-theme-3 hover:bg-theme-3/10'}`}
             title={(!isHovered && !isOpen) ? (user ? "Sign Out" : "Sign In") : ""}
           >
             <div className="flex items-center justify-center w-6 h-6 flex-shrink-0">
@@ -225,13 +229,12 @@ export default function Sidebar() {
             </span>
           </button>
 
-          <a 
-            href="https://github.com/Alwin-Saji/QR" 
-            target="_blank" 
-            rel="noreferrer" 
-            className={`flex items-center rounded-lg font-bold text-theme-4/80 hover:bg-theme-1/50 hover:text-theme-4 transition-all duration-300 ${
-              isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
-            }`}
+          <a
+            href="https://github.com/Alwin-Saji/QR"
+            target="_blank"
+            rel="noreferrer"
+            className={`flex items-center rounded-lg font-bold text-theme-4/80 hover:bg-theme-1/50 hover:text-theme-4 transition-all duration-300 ${isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
+              }`}
             title={(!isHovered && !isOpen) ? "About ARC" : ""}
           >
             <div className="flex items-center justify-center w-6 h-6 flex-shrink-0">
