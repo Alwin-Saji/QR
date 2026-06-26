@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { Camera, Check, Image as ImageIcon, Loader2, Pencil, UserRound, X, WifiOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { updateDisplayName, uploadPhoto } from '../services/storage';
+import ImageFilterStep from './ImageFilterStep';
+import { applyFilterToImage } from '../utils/imageFilters';
 import { useSync } from '../contexts/SyncContext';
 
 export default function CameraCapture({ eventId, guestId, isCreator }) {
@@ -19,6 +21,8 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
   const [uploadMessage, setUploadMessage] = useState('');
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+  const [editingImageSrc, setEditingImageSrc] = useState(null);
+  const [pendingFile, setPendingFile] = useState(null);
 
   const { uploading, done, total } = uploadState;
 
@@ -95,14 +99,28 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
     if (files.length === 0) return;
 
     event.target.value = '';
-    setUploadState({ uploading: true, done: 0, total: files.length });
+
+    // If multiple photos are uploaded simultaneously from the gallery, skip editing to avoid user fatigue
+    if (files.length > 1) {
+      processAndUploadFiles(files);
+    } else {
+      // Single photo selected: Open the editor workflow
+      const targetFile = files[0];
+      setPendingFile(targetFile);
+      setEditingImageSrc(URL.createObjectURL(targetFile));
+    }
+  };
+
+  // Extracted core loop to process execution smoothly
+  const processAndUploadFiles = async (filesToUpload) => {
+    setUploadState({ uploading: true, done: 0, total: filesToUpload.length });
     setUploadMessage('');
 
     let failedUploads = 0;
 
-    for (let i = 0; i < files.length; i += 1) {
+    for (let i = 0; i < filesToUpload.length; i += 1) {
       try {
-        const result = await uploadPhoto(eventId, files[i], {
+        const result = await uploadPhoto(eventId, filesToUpload[i], {
           displayName,
           guestId,
           isCreator,
@@ -112,25 +130,71 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
         }
       } catch (error) {
         failedUploads += 1;
-        console.error('Upload failed for', files[i].name, error);
+        console.error('Upload failed for', filesToUpload[i].name, error);
         setUploadMessage(error.message || 'Some photos failed to upload.');
       }
 
-      setUploadState({ uploading: true, done: i + 1, total: files.length });
+      setUploadState({ uploading: true, done: i + 1, total: filesToUpload.length });
     }
 
     setUploadState({ uploading: false, done: 0, total: 0 });
 
     if (failedUploads === 0) {
       if (!isOnline) {
-        toast.success(files.length === 1 ? 'Photo saved to queue!' : `${files.length} photos saved to queue!`);
+        toast.success(filesToUpload.length === 1 ? 'Photo saved to queue!' : `${filesToUpload.length} photos saved to queue!`);
       } else {
-        toast.success(files.length === 1 ? 'Photo uploaded!' : `${files.length} photos uploaded!`);
+        toast.success(filesToUpload.length === 1 ? 'Photo uploaded!' : `${filesToUpload.length} photos uploaded!`);
       }
     } else {
       toast.error(`${failedUploads} upload${failedUploads === 1 ? '' : 's'} failed`);
     }
   };
+  const handleFilterCancel = () => {
+    if (editingImageSrc) URL.revokeObjectURL(editingImageSrc);
+    setEditingImageSrc(null);
+    setPendingFile(null);
+  };
+
+  const handleFilterConfirm = async (selectedFilter) => {
+    try {
+      let fileToSubmit = pendingFile;
+
+      // Only perform canvas pixel manipulation if a real filter choice is picked
+      if (selectedFilter !== 'none') {
+        const processedBlob = await applyFilterToImage(editingImageSrc, selectedFilter);
+        // Cast the raw blob output into a fully compliant standard File descriptor format
+        fileToSubmit = new File([processedBlob], pendingFile.name, {
+          type: 'image/jpeg',
+          lastModified: Date.now(),
+        });
+      }
+
+      // Cleanup local runtime preview object to free browser memory
+      if (editingImageSrc) URL.revokeObjectURL(editingImageSrc);
+      setEditingImageSrc(null);
+      setPendingFile(null);
+
+      // Fire off our standard uploading engine with the brand new filtered picture
+      await processAndUploadFiles([fileToSubmit]);
+    } catch (error) {
+      console.error("Failed to compile filtered output:", error);
+      toast.error("Could not apply filter overlay.");
+    }
+  };
+
+ 
+
+  if (editingImageSrc) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+        <ImageFilterStep 
+          imageSrc={editingImageSrc} 
+          onCancel={handleFilterCancel} 
+          onConfirm={handleFilterConfirm} 
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-2/90 backdrop-blur-md px-4 py-3 rounded-4xl border border-theme-3/20 shadow-2xl w-fit">
