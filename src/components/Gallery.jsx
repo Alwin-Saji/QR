@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, QrCode, X, Trash2, CheckCircle2, Ban } from 'lucide-react';
 import PhotoLightbox from './PhotoLightbox';
+import LazyImage from './LazyImage';
 
 export default function Gallery({ eventId, eventName, isCreator, currentUploaderId }) {
   const [photos, setPhotos] = useState([]);
@@ -433,7 +434,7 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
             </div>
 
             <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-theme-3/20 shadow-sm mt-2">
-              <img src={selectedPhotoForQR.url} alt="Preview" className="w-full h-full object-cover" />
+              <LazyImage src={selectedPhotoForQR.url} alt="Preview" className="w-full h-full object-cover" />
             </div>
           </div>
         </div>
@@ -561,11 +562,10 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
         className={`relative aspect-square rounded-2xl overflow-hidden shadow-md cursor-pointer transition-all duration-300 border-4 ${isSelected ? 'border-theme-3' : 'border-transparent'}`}
         onClick={onToggleSelect}
       >
-        <img
+        <LazyImage
           src={photo.url}
           alt="Event moment"
           className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? 'scale-110 opacity-80' : ''}`}
-          loading="lazy"
         />
         <div className="absolute top-4 right-4 bg-white/50 backdrop-blur-sm rounded-full p-1">
           {isSelected ? (
@@ -597,11 +597,10 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
         setTimeout(() => setIsDraggingCard(false), 0);
       }}
     >
-      <img
+      <LazyImage
         src={photo.url}
         alt="Event moment"
         className={`w-full h-full object-cover transition-transform duration-500 ${showOverlay ? 'scale-110' : ''}`}
-        loading="lazy"
       />
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 to-transparent px-4 py-3 pointer-events-none">
         <p className="text-white text-sm font-bold truncate">Uploaded by {uploadedBy}</p>
