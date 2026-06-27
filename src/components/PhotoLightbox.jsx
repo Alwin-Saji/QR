@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Download, QrCode, X } from 'lucide-react';
+import LazyImage from './LazyImage';
 
 export default function PhotoLightbox({
   photos,
@@ -71,7 +72,7 @@ export default function PhotoLightbox({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="min-h-0 w-full flex-1 overflow-hidden rounded-2xl bg-black/40 shadow-2xl ring-1 ring-white/10">
-          <img
+          <LazyImage
             src={photo.url}
             alt="Event moment"
             className="h-full w-full object-contain"
