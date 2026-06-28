@@ -1,80 +1,197 @@
-// src/components/ImageFilterStep.jsx
-import React, { useState } from 'react';
-import { ArrowLeft, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { processCanvasImage } from '../utils/imageFilters';
 
-const FILTER_OPTIONS = [
-  { id: 'none', name: 'Original', class: '' },
-  { id: 'grayscale', name: 'B&W', class: 'grayscale' },
-  { id: 'vintage', name: 'Vintage', class: 'sepia brightness-95 contrast-110' },
-  { id: 'warm', name: 'Warm', class: 'sepia-0 hue-rotate-15 saturate-125' },
-  { id: 'cool', name: 'Cool', class: 'hue-rotate-180 brightness-105' },
-];
+export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
+  const [filterType, setFilterType] = useState('none');
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [saturation, setSaturation] = useState(100);
+  const [frame, setFrame] = useState('none');
+  
+  const canvasRef = useRef(null);
+  const imageRef = useRef(null);
+  const [imageSrc, setImageSrc] = useState('');
 
-export default function ImageFilterStep({ imageSrc, onCancel, onConfirm }) {
-  const [selectedFilter, setSelectedFilter] = useState('none');
-  const [isProcessing, setIsProcessing] = useState(false);
+  // 1. High-reliability asynchronous file stream parsing
+  useEffect(() => {
+    if (!originalFile) return;
 
-  const handleApply = async () => {
-    setIsProcessing(true);
-    await onConfirm(selectedFilter);
-    setIsProcessing(false);
+    // Handle direct file paths or strings smoothly
+    if (typeof originalFile === 'string') {
+      setImageSrc(originalFile);
+      return;
+    }
+
+    // Use FileReader instead of unstable createObjectURL to prevent StrictMode cleanup drops
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageSrc(reader.result);
+    };
+    reader.readAsDataURL(originalFile);
+
+    return () => {
+      reader.abort();
+    };
+  }, [originalFile]);
+
+// 2. Continuous Canvas synchronization engine
+  useEffect(() => {
+    if (!canvasRef.current || !imageRef.current || !imageSrc) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const img = imageRef.current;
+
+    const renderCanvas = () => {
+      const width = img.naturalWidth || img.width;
+      const height = img.naturalHeight || img.height;
+
+      if (width === 0 || height === 0) return;
+
+      canvas.width = width;
+      canvas.height = height;
+      
+      // 💡 CACHE THE IMAGE ELEMENT ON THE CANVAS:
+      canvas.__sourceImage = img;
+      
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0);
+
+      // Execute customization parameters
+      processCanvasImage(ctx, width, height, {
+        filterType,
+        brightness,
+        contrast,
+        saturation,
+        frame
+      });
+    };
+
+    if (img.complete && img.naturalWidth > 0) {
+      renderCanvas();
+    } else {
+      img.onload = renderCanvas;
+    }
+  }, [filterType, brightness, contrast, saturation, frame, imageSrc]);
+  const handleSave = () => {
+    if (!canvasRef.current) return;
+    canvasRef.current.toBlob((blob) => {
+      onApply(blob);
+    }, 'image/jpeg', 0.95);
   };
 
   return (
-    <div className="flex flex-col items-center bg-zinc-950 text-white p-4 justify-between rounded-2xl border border-zinc-800 max-w-md mx-auto w-full">
-      <div className="w-full flex justify-between items-center pb-2 border-b border-zinc-900">
-        <button onClick={onCancel} className="p-2 hover:bg-zinc-900 rounded-full transition" disabled={isProcessing}>
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <span className="font-medium text-sm tracking-wide">Edit Photo</span>
-        <div className="w-9"></div>
-      </div>
-
-      <div className="relative w-full aspect-[3/4] my-4 bg-zinc-900 rounded-xl overflow-hidden flex items-center justify-center border border-zinc-800">
+    <div className="filter-modal bg-stone-950 text-white p-6 rounded-xl max-w-lg mx-auto shadow-2xl border border-stone-800">
+      <h3 className="text-lg font-bold mb-4 tracking-wide text-center">Customize Your Capture</h3>
+      
+      {/* Structural Reference Mirror Element */}
+      {imageSrc && (
         <img 
+          ref={imageRef} 
           src={imageSrc} 
-          alt="Preview" 
-          className={`w-full h-full object-cover transition-all duration-200 ${
-            FILTER_OPTIONS.find(f => f.id === selectedFilter)?.class
-          }`}
+          alt="source" 
+          className="hidden" 
+          crossOrigin="anonymous"
         />
+      )}
+      
+      {/* Live Canvas Window */}
+      <div className="flex justify-center mb-4 bg-black/40 rounded-lg overflow-hidden border border-stone-900 min-h-[220px] items-center">
+        <canvas ref={canvasRef} className="max-w-full max-h-[350px] object-contain" />
       </div>
 
-      <div className="w-full space-y-4">
-        <div className="flex gap-3 overflow-x-auto py-2 px-1">
-          {FILTER_OPTIONS.map((filter) => (
+      {/* --- Filter Presets Block --- */}
+      <div className="mb-4">
+        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-2">Filters</span>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {['none', 'bw', 'vintage', 'warm', 'cool'].map((t) => (
             <button
-              key={filter.id}
-              onClick={() => setSelectedFilter(filter.id)}
-              className="flex flex-col items-center space-y-1 flex-shrink-0"
+              key={t}
+              onClick={() => setFilterType(t)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all uppercase ${
+                filterType === t ? 'bg-amber-600 text-white shadow-md' : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
+              }`}
             >
-              <div className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                selectedFilter === filter.id ? 'border-amber-500 scale-105' : 'border-transparent opacity-60'
-              }`}>
-                <img src={imageSrc} alt="" className={`w-full h-full object-cover ${filter.class}`} />
-              </div>
-              <span className={`text-[10px] ${selectedFilter === filter.id ? 'text-amber-400 font-medium' : 'text-zinc-400'}`}>
-                {filter.name}
-              </span>
+              {t === 'none' ? 'Normal' : t}
             </button>
           ))}
         </div>
+      </div>
 
-        <button
-          onClick={handleApply}
-          disabled={isProcessing}
-          className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-zinc-800 text-black font-semibold rounded-xl flex items-center justify-center gap-2 text-sm"
-        >
-          {isProcessing ? (
-            <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-          ) : (
-            <>
-              <Check className="w-4 h-4" />
-              <span>Apply & Upload</span>
-            </>
-          )}
+      {/* --- Frames Control Block --- */}
+      <div className="mb-4">
+        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-2">Creative Frames</span>
+        <div className="flex gap-2">
+          {[
+            { id: 'none', label: 'No Frame' },
+            { id: 'polaroid', label: '📸 Polaroid' },
+            { id: 'film', label: '🎞️ Retro Film' }
+          ].map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFrame(f.id)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                frame === f.id ? 'bg-amber-600 text-white shadow-md' : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* --- Adjustment Sliders Panel --- */}
+      <div className="space-y-3 bg-stone-900/60 p-4 rounded-lg border border-stone-800 mb-6">
+        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-1">Fine-Tune Adjustments</span>
+        
+        <div>
+          <div className="flex justify-between text-xs text-stone-300 mb-1">
+            <span>Brightness</span>
+            <span>{brightness}%</span>
+          </div>
+          <input
+            type="range" min="50" max="150" value={brightness}
+            onChange={(e) => setBrightness(Number(e.target.value))}
+            className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+          />
+        </div>
+
+        <div>
+          <div className="flex justify-between text-xs text-stone-300 mb-1">
+            <span>Contrast</span>
+            <span>{contrast}%</span>
+          </div>
+          <input
+            type="range" min="50" max="150" value={contrast}
+            onChange={(e) => setContrast(Number(e.target.value))}
+            className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+          />
+        </div>
+
+        <div>
+          <div className="flex justify-between text-xs text-stone-300 mb-1">
+            <span>Saturation</span>
+            <span>{saturation}%</span>
+          </div>
+          <input
+            type="range" min="0" max="200" value={saturation}
+            onChange={(e) => setSaturation(Number(e.target.value))}
+            className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+          />
+        </div>
+      </div>
+
+      {/* Action Footers */}
+      <div className="flex justify-end gap-3 border-t border-stone-900 pt-4">
+        <button onClick={onCancel} className="px-4 py-2 text-sm text-stone-400 hover:text-white transition-colors">
+          Cancel
+        </button>
+        <button onClick={handleSave} className="px-5 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-all shadow-md">
+          Apply & Upload
         </button>
       </div>
     </div>
   );
-}
+};
+
+export default ImageFilterStep;

@@ -3,7 +3,6 @@ import { Camera, Check, Image as ImageIcon, Loader2, Pencil, UserRound, X, WifiO
 import toast from 'react-hot-toast';
 import { updateDisplayName, uploadPhoto } from '../services/storage';
 import ImageFilterStep from './ImageFilterStep';
-import { applyFilterToImage } from '../utils/imageFilters';
 import { useSync } from '../contexts/SyncContext';
 
 export default function CameraCapture({ eventId, guestId, isCreator }) {
@@ -21,7 +20,9 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
   const [uploadMessage, setUploadMessage] = useState('');
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
-  const [editingImageSrc, setEditingImageSrc] = useState(null);
+  
+  // 💡 Structural fix: We track state only for the modal visibility and the raw binary file asset
+  const [showFilterModal, setShowFilterModal] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
 
   const { uploading, done, total } = uploadState;
@@ -100,18 +101,16 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
 
     event.target.value = '';
 
-    // If multiple photos are uploaded simultaneously from the gallery, skip editing to avoid user fatigue
     if (files.length > 1) {
       processAndUploadFiles(files);
     } else {
-      // Single photo selected: Open the editor workflow
+      // Single photo configuration: pass the baseline file and toggle the view modal
       const targetFile = files[0];
       setPendingFile(targetFile);
-      setEditingImageSrc(URL.createObjectURL(targetFile));
+      setShowFilterModal(true);
     }
   };
 
-  // Extracted core loop to process execution smoothly
   const processAndUploadFiles = async (filesToUpload) => {
     setUploadState({ uploading: true, done: 0, total: filesToUpload.length });
     setUploadMessage('');
@@ -149,48 +148,40 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
       toast.error(`${failedUploads} upload${failedUploads === 1 ? '' : 's'} failed`);
     }
   };
+
   const handleFilterCancel = () => {
-    if (editingImageSrc) URL.revokeObjectURL(editingImageSrc);
-    setEditingImageSrc(null);
+    setShowFilterModal(false);
     setPendingFile(null);
   };
 
-  const handleFilterConfirm = async (selectedFilter) => {
+  // 💡 FIX: ImageFilterStep applies options locally and returns the fully processed binary blob object directly to this callback
+  const handleFilterConfirm = async (processedBlob) => {
     try {
-      let fileToSubmit = pendingFile;
+      // Cast the final binary stream safely back into standard file descriptor formatting structure
+      const fileToSubmit = new File([processedBlob], pendingFile.name, {
+        type: 'image/jpeg',
+        lastModified: Date.now(),
+      });
 
-      // Only perform canvas pixel manipulation if a real filter choice is picked
-      if (selectedFilter !== 'none') {
-        const processedBlob = await applyFilterToImage(editingImageSrc, selectedFilter);
-        // Cast the raw blob output into a fully compliant standard File descriptor format
-        fileToSubmit = new File([processedBlob], pendingFile.name, {
-          type: 'image/jpeg',
-          lastModified: Date.now(),
-        });
-      }
-
-      // Cleanup local runtime preview object to free browser memory
-      if (editingImageSrc) URL.revokeObjectURL(editingImageSrc);
-      setEditingImageSrc(null);
+      setShowFilterModal(false);
       setPendingFile(null);
 
-      // Fire off our standard uploading engine with the brand new filtered picture
+      // Instantly hand it over to the cloud storage uploader queue
       await processAndUploadFiles([fileToSubmit]);
     } catch (error) {
-      console.error("Failed to compile filtered output:", error);
-      toast.error("Could not apply filter overlay.");
+      console.error("Failed to process customized picture selection:", error);
+      toast.error("Could not upload customized photo.");
     }
   };
 
- 
-
-  if (editingImageSrc) {
+  // Render the Modal view when active
+  if (showFilterModal && pendingFile) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
         <ImageFilterStep 
-          imageSrc={editingImageSrc} 
+          originalFile={pendingFile} 
+          onApply={handleFilterConfirm} 
           onCancel={handleFilterCancel} 
-          onConfirm={handleFilterConfirm} 
         />
       </div>
     );
