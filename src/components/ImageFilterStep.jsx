@@ -1,40 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { processCanvasImage } from '../utils/imageFilters';
 
 export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
+  // 1. Declare 0-centered default states (-100 to 100)
   const [filterType, setFilterType] = useState('none');
-  const [brightness, setBrightness] = useState(100);
-  const [contrast, setContrast] = useState(100);
-  const [saturation, setSaturation] = useState(100);
+  const [brightness, setBrightness] = useState(0);
+  const [contrast, setContrast] = useState(0);
+  const [saturation, setSaturation] = useState(0);
   const [frame, setFrame] = useState('none');
   
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
   const [imageSrc, setImageSrc] = useState('');
 
-  // 1. High-reliability asynchronous file stream parsing
+  // 2. Clear state back to default settings
+  const handleReset = () => {
+    setFilterType('none');
+    setBrightness(0);
+    setContrast(0);
+    setSaturation(0);
+    setFrame('none');
+  };
+
   useEffect(() => {
     if (!originalFile) return;
 
-    // Handle direct file paths or strings smoothly
-    if (typeof originalFile === 'string') {
-      setImageSrc(originalFile);
-      return;
+    let url = '';
+    if (originalFile instanceof File || originalFile instanceof Blob) {
+      url = URL.createObjectURL(originalFile);
+    } else if (typeof originalFile === 'string') {
+      url = originalFile;
     }
 
-    // Use FileReader instead of unstable createObjectURL to prevent StrictMode cleanup drops
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImageSrc(reader.result);
-    };
-    reader.readAsDataURL(originalFile);
+    setImageSrc(url);
 
     return () => {
-      reader.abort();
+      if (url && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
     };
   }, [originalFile]);
 
-// 2. Continuous Canvas synchronization engine
+  // 3. Continuous Canvas synchronization engine
   useEffect(() => {
     if (!canvasRef.current || !imageRef.current || !imageSrc) return;
     
@@ -51,13 +59,8 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
       canvas.width = width;
       canvas.height = height;
       
-      // 💡 CACHE THE IMAGE ELEMENT ON THE CANVAS:
       canvas.__sourceImage = img;
       
-      ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0);
-
-      // Execute customization parameters
       processCanvasImage(ctx, width, height, {
         filterType,
         brightness,
@@ -73,6 +76,7 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
       img.onload = renderCanvas;
     }
   }, [filterType, brightness, contrast, saturation, frame, imageSrc]);
+
   const handleSave = () => {
     if (!canvasRef.current) return;
     canvasRef.current.toBlob((blob) => {
@@ -82,9 +86,18 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
 
   return (
     <div className="filter-modal bg-stone-950 text-white p-6 rounded-xl max-w-lg mx-auto shadow-2xl border border-stone-800">
-      <h3 className="text-lg font-bold mb-4 tracking-wide text-center">Customize Your Capture</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-base font-bold tracking-wide">Customize Your Capture</h3>
+        <button 
+          onClick={handleReset}
+          className="flex items-center gap-1.5 text-xs font-semibold bg-stone-900 hover:bg-stone-800 border border-stone-800 px-3 py-1.5 rounded-lg text-amber-500 transition-all active:scale-95"
+          title="Reset all updates"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Reset
+        </button>
+      </div>
       
-      {/* Structural Reference Mirror Element */}
       {imageSrc && (
         <img 
           ref={imageRef} 
@@ -140,48 +153,57 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
         </div>
       </div>
 
-      {/* --- Adjustment Sliders Panel --- */}
-      <div className="space-y-3 bg-stone-900/60 p-4 rounded-lg border border-stone-800 mb-6">
+      {/* --- Slider Configuration Panel --- */}
+      <div className="space-y-3 bg-stone-900/40 p-4 rounded-lg border border-stone-900 mb-6">
         <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-1">Fine-Tune Adjustments</span>
         
+        {/* Brightness Input Slider */}
         <div>
           <div className="flex justify-between text-xs text-stone-300 mb-1">
             <span>Brightness</span>
-            <span>{brightness}%</span>
+            <span className={brightness > 0 ? "text-emerald-400" : brightness < 0 ? "text-amber-400" : "text-stone-400"}>
+              {brightness > 0 ? `+${brightness}` : brightness}
+            </span>
           </div>
           <input
-            type="range" min="50" max="150" value={brightness}
+            type="range" min="-100" max="100" value={brightness}
             onChange={(e) => setBrightness(Number(e.target.value))}
-            className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            className="w-full h-1 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
           />
         </div>
 
+        {/* Contrast Input Slider */}
         <div>
           <div className="flex justify-between text-xs text-stone-300 mb-1">
             <span>Contrast</span>
-            <span>{contrast}%</span>
+            <span className={contrast > 0 ? "text-emerald-400" : contrast < 0 ? "text-amber-400" : "text-stone-400"}>
+              {contrast > 0 ? `+${contrast}` : contrast}
+            </span>
           </div>
           <input
-            type="range" min="50" max="150" value={contrast}
+            type="range" min="-100" max="100" value={contrast}
             onChange={(e) => setContrast(Number(e.target.value))}
-            className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            className="w-full h-1 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
           />
         </div>
 
+        {/* Saturation Input Slider */}
         <div>
           <div className="flex justify-between text-xs text-stone-300 mb-1">
             <span>Saturation</span>
-            <span>{saturation}%</span>
+            <span className={saturation > 0 ? "text-emerald-400" : saturation < 0 ? "text-amber-400" : "text-stone-400"}>
+              {saturation > 0 ? `+${saturation}` : saturation}
+            </span>
           </div>
           <input
-            type="range" min="0" max="200" value={saturation}
+            type="range" min="-100" max="100" value={saturation}
             onChange={(e) => setSaturation(Number(e.target.value))}
-            className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            className="w-full h-1 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
           />
         </div>
       </div>
 
-      {/* Action Footers */}
+      {/* Control Buttons */}
       <div className="flex justify-end gap-3 border-t border-stone-900 pt-4">
         <button onClick={onCancel} className="px-4 py-2 text-sm text-stone-400 hover:text-white transition-colors">
           Cancel

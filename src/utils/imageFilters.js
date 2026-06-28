@@ -1,14 +1,23 @@
 /**
- * Processes a canvas context to apply adjustments, filters, and borders.
+ * Processes a canvas context to apply adjustments, filters, and borders cleanly.
+ * @param {CanvasRenderingContext2D} ctx - The canvas rendering context
+ * @param {number} width - Canvas width
+ * @param {number} height - Canvas height
+ * @param {Object} options - Custom adjustments configuration
  */
 export const processCanvasImage = (ctx, width, height, options) => {
   const { filterType, brightness, contrast, saturation, frame } = options;
 
-  // 1. Clear out the workspace completely
+  // 1. Reset canvas and calculate normalized percentages from 0-centered states
   ctx.clearRect(0, 0, width, height);
 
-  // 2. Build and apply the native filter chain string
-  let filterString = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+  // Map 0-centered sliders (-100 to 100) to standard percentages (0% to 200%)
+  const normalizedBrightness = brightness + 100;
+  const normalizedContrast = contrast + 100;
+  const normalizedSaturation = saturation + 100;
+
+  // 2. Build the high-performance native filter string
+  let filterString = `brightness(${normalizedBrightness}%) contrast(${normalizedContrast}%) saturate(${normalizedSaturation}%)`;
 
   if (filterType === 'bw') {
     filterString += ' grayscale(100%)';
@@ -20,59 +29,46 @@ export const processCanvasImage = (ctx, width, height, options) => {
     filterString += ' hue-rotate(15deg) saturate(120%)';
   }
 
-  // Assign filter matrix properties to context state
+  // 3. Render the photo directly through the hardware-accelerated pipeline
   ctx.filter = filterString;
-
-  // 3. Draw the underlying image through the active filter pipeline
   const sourceImg = ctx.canvas.__sourceImage || document.querySelector('img[alt="source"]');
   if (sourceImg) {
     ctx.drawImage(sourceImg, 0, 0, width, height);
   } else {
-    return; // Safety guard: if there is no source image yet, exit early
+    return;
   }
 
-  // 4. Draw a custom frame overlay if one is selected
+  // 4. Layer decorative vectors cleanly on top without sluggish pixel data copying
   if (frame && frame !== 'none') {
-    // 🚨 THE CRITICAL STATE FIX: Save the filtered pixels as an image data snapshot 
-    // BEFORE resetting ctx.filter to 'none'
-    const filteredPixelsSnapshot = ctx.getImageData(0, 0, width, height);
-    
-    // Clear filters safely—the pixels are already drawn and captured in memory
-    ctx.filter = 'none'; 
-    ctx.putImageData(filteredPixelsSnapshot, 0, 0);
-
+    ctx.filter = 'none'; // Clear the filter state so borders aren't discolored
     const minDimension = Math.min(width, height);
 
-    // Dynamic Polaroid Frame Layout
     if (frame === 'polaroid') {
       const borderSize = minDimension * 0.05;
       const bottomExtend = minDimension * 0.12;
 
       ctx.lineWidth = borderSize;
-      ctx.strokeStyle = '#FDFDFD'; // Off-white border
+      ctx.strokeStyle = '#FDFDFD';
       ctx.strokeRect(borderSize / 2, borderSize / 2, width - borderSize, height - borderSize);
       
-      // Bottom thick block for captions
       ctx.fillStyle = '#FDFDFD';
       ctx.fillRect(0, height - bottomExtend, width, bottomExtend);
     }
 
-    // Dynamic Retro Film Frame Layout
     if (frame === 'film') {
       const borderSize = minDimension * 0.04;
       ctx.lineWidth = borderSize;
-      ctx.strokeStyle = '#1A1A1A'; // Film strip matte dark
+      ctx.strokeStyle = '#1A1A1A';
       ctx.strokeRect(borderSize / 2, borderSize / 2, width - borderSize, height - borderSize);
 
-      // Draw standard cinematic sprocket perforation alignments
       ctx.fillStyle = '#FAF9F6';
       const holeWidth = minDimension * 0.015;
       const holeHeight = minDimension * 0.02;
       const spacing = holeHeight * 2;
 
       for (let y = borderSize; y < height - borderSize; y += spacing) {
-        ctx.fillRect(borderSize * 0.2, y, holeWidth, holeHeight); // Left rail holes
-        ctx.fillRect(width - (borderSize * 0.2) - holeWidth, y, holeWidth, holeHeight); // Right rail holes
+        ctx.fillRect(borderSize * 0.2, y, holeWidth, holeHeight);
+        ctx.fillRect(width - (borderSize * 0.2) - holeWidth, y, holeWidth, holeHeight);
       }
     }
   }
