@@ -33,13 +33,9 @@ export const processCanvasImage = (ctx, width, height, options) => {
 
   // 4. Draw a custom frame overlay if one is selected
   if (frame && frame !== 'none') {
-    // 🚨 THE CRITICAL STATE FIX: Save the filtered pixels as an image data snapshot 
-    // BEFORE resetting ctx.filter to 'none'
-    const filteredPixelsSnapshot = ctx.getImageData(0, 0, width, height);
-    
-    // Clear filters safely—the pixels are already drawn and captured in memory
+    // Clear filters safely—the pixels are already drawn
+    // (Changing ctx.filter only applies to subsequent draw operations)
     ctx.filter = 'none'; 
-    ctx.putImageData(filteredPixelsSnapshot, 0, 0);
 
     const minDimension = Math.min(width, height);
 

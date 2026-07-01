@@ -6,7 +6,7 @@ import { uploadPhoto } from '../services/storage';
 import Gallery from '../components/Gallery';
 import CameraCapture from '../components/CameraCapture';
 import QRCodeDisplay from '../components/QRCodeDisplay';
-import { Loader2, QrCode, Share2, Upload } from 'lucide-react';
+import { Loader2, QrCode, Share2, Upload, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const getOrCreateGuestId = (eventId) => {
@@ -158,8 +158,16 @@ export default function EventLive() {
       onDrop={handleDrop}
       className="w-full min-h-full bg-theme-1 text-theme-4 relative pb-20 pt-20 md:pt-0"
     >
-      <header className="px-6 py-8 border-b border-theme-3/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="font-heading font-bold text-5xl text-theme-4 truncate">{eventData.name || 'Live Event'}</h1>
+      <header className="px-6 py-8 border-b border-theme-3/10 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="flex flex-col gap-2 max-w-full overflow-hidden">
+          <h1 className="font-heading font-bold text-5xl text-theme-4 truncate">{eventData.name || 'Live Event'}</h1>
+          {eventData.auto_delete && (
+            <div className="flex items-center gap-2 text-sm text-theme-4/60 mt-1">
+              <Clock className="w-4 h-4 opacity-70" />
+              <span>Photos disappear 24 hours after upload</span>
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-3">
           <button

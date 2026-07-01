@@ -7,10 +7,19 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
   const [frame, setFrame] = useState('none');
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
   const [imageSrc, setImageSrc] = useState('');
+
+  // Lock scroll while editing
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   // 1. High-reliability asynchronous file stream parsing
   useEffect(() => {
@@ -43,10 +52,18 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
     const img = imageRef.current;
 
     const renderCanvas = () => {
-      const width = img.naturalWidth || img.width;
-      const height = img.naturalHeight || img.height;
+      let width = img.naturalWidth || img.width;
+      let height = img.naturalHeight || img.height;
 
       if (width === 0 || height === 0) return;
+
+      // Downscale for buttery smooth live preview
+      const MAX_PREVIEW_SIZE = 800;
+      if (width > MAX_PREVIEW_SIZE || height > MAX_PREVIEW_SIZE) {
+        const ratio = Math.min(MAX_PREVIEW_SIZE / width, MAX_PREVIEW_SIZE / height);
+        width = Math.floor(width * ratio);
+        height = Math.floor(height * ratio);
+      }
 
       canvas.width = width;
       canvas.height = height;
@@ -55,7 +72,6 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
       canvas.__sourceImage = img;
       
       ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0);
 
       // Execute customization parameters
       processCanvasImage(ctx, width, height, {
@@ -73,16 +89,39 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
       img.onload = renderCanvas;
     }
   }, [filterType, brightness, contrast, saturation, frame, imageSrc]);
+
   const handleSave = () => {
-    if (!canvasRef.current) return;
-    canvasRef.current.toBlob((blob) => {
+    if (!imageRef.current || !imageSrc) return;
+    setIsProcessing(true);
+    
+    // Create an offscreen canvas at full resolution for the final output
+    const img = imageRef.current;
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = img.naturalWidth || img.width;
+    exportCanvas.height = img.naturalHeight || img.height;
+    
+    exportCanvas.__sourceImage = img;
+    const ctx = exportCanvas.getContext('2d');
+    
+    processCanvasImage(ctx, exportCanvas.width, exportCanvas.height, {
+      filterType,
+      brightness,
+      contrast,
+      saturation,
+      frame
+    });
+    
+    exportCanvas.toBlob((blob) => {
+      setIsProcessing(false);
       onApply(blob);
     }, 'image/jpeg', 0.95);
   };
 
   return (
-    <div className="filter-modal bg-stone-950 text-white p-6 rounded-xl max-w-lg mx-auto shadow-2xl border border-stone-800">
-      <h3 className="text-lg font-bold mb-4 tracking-wide text-center">Customize Your Capture</h3>
+    <div className="bg-theme-1 text-theme-4 p-6 rounded-2xl w-full max-w-lg mx-auto shadow-sm border border-theme-3/10 flex flex-col max-h-[85vh]">
+      <div className="flex justify-between items-center mb-6 shrink-0">
+        <h3 className="text-xl font-heading font-medium text-theme-4">Edit Photo</h3>
+      </div>
       
       {/* Structural Reference Mirror Element */}
       {imageSrc && (
@@ -96,42 +135,52 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
       )}
       
       {/* Live Canvas Window */}
-      <div className="flex justify-center mb-4 bg-black/40 rounded-lg overflow-hidden border border-stone-900 min-h-[220px] items-center">
-        <canvas ref={canvasRef} className="max-w-full max-h-[350px] object-contain" />
+      <div className="flex justify-center mb-4 shrink-0">
+        <canvas 
+          ref={canvasRef} 
+          className="bg-theme-2 rounded-xl border border-theme-3/10 max-w-full max-h-[50vh] object-contain shadow-sm" 
+        />
       </div>
 
+      {/* Scrollable Customization Container */}
+      <div className="flex flex-col gap-6 overflow-y-auto scrollbar-hide flex-1 min-h-0">
+
       {/* --- Filter Presets Block --- */}
-      <div className="mb-4">
-        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-2">Filters</span>
-        <div className="flex gap-2 overflow-x-auto pb-1">
+      <div>
+        <span className="text-[10px] font-medium uppercase tracking-widest text-theme-4/50 block mb-3">Filters</span>
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {['none', 'bw', 'vintage', 'warm', 'cool'].map((t) => (
             <button
               key={t}
               onClick={() => setFilterType(t)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all uppercase ${
-                filterType === t ? 'bg-amber-600 text-white shadow-md' : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
+              className={`px-4 py-2 text-xs rounded-full transition-all whitespace-nowrap ${
+                filterType === t 
+                  ? 'bg-theme-4 text-theme-1 font-medium' 
+                  : 'bg-theme-2 text-theme-4/70 hover:bg-theme-3/10 hover:text-theme-4 border border-theme-3/20'
               }`}
             >
-              {t === 'none' ? 'Normal' : t}
+              {t === 'none' ? 'Original' : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
       </div>
 
       {/* --- Frames Control Block --- */}
-      <div className="mb-4">
-        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-2">Creative Frames</span>
-        <div className="flex gap-2">
+      <div>
+        <span className="text-[10px] font-medium uppercase tracking-widest text-theme-4/50 block mb-3">Frames</span>
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {[
-            { id: 'none', label: 'No Frame' },
-            { id: 'polaroid', label: '📸 Polaroid' },
-            { id: 'film', label: '🎞️ Retro Film' }
+            { id: 'none', label: 'None' },
+            { id: 'polaroid', label: 'Polaroid' },
+            { id: 'film', label: 'Film' }
           ].map((f) => (
             <button
               key={f.id}
               onClick={() => setFrame(f.id)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                frame === f.id ? 'bg-amber-600 text-white shadow-md' : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
+              className={`px-4 py-2 text-xs rounded-full transition-all whitespace-nowrap ${
+                frame === f.id 
+                  ? 'bg-theme-4 text-theme-1 font-medium' 
+                  : 'bg-theme-2 text-theme-4/70 hover:bg-theme-3/10 hover:text-theme-4 border border-theme-3/20'
               }`}
             >
               {f.label}
@@ -141,53 +190,58 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
       </div>
 
       {/* --- Adjustment Sliders Panel --- */}
-      <div className="space-y-3 bg-stone-900/60 p-4 rounded-lg border border-stone-800 mb-6">
-        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-1">Fine-Tune Adjustments</span>
+      <div className="space-y-4">
+        <span className="text-[10px] font-medium uppercase tracking-widest text-theme-4/50 block mb-1">Adjustments</span>
         
-        <div>
-          <div className="flex justify-between text-xs text-stone-300 mb-1">
-            <span>Brightness</span>
-            <span>{brightness}%</span>
+        <div className="flex flex-col gap-3">
+          {/* Brightness */}
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-theme-4/70 w-16">Brightness</span>
+            <input
+              type="range" min="50" max="150" value={brightness}
+              onChange={(e) => setBrightness(Number(e.target.value))}
+              className="flex-1 h-1 bg-theme-3/20 rounded-lg appearance-none cursor-pointer accent-theme-4"
+            />
           </div>
-          <input
-            type="range" min="50" max="150" value={brightness}
-            onChange={(e) => setBrightness(Number(e.target.value))}
-            className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-          />
-        </div>
 
-        <div>
-          <div className="flex justify-between text-xs text-stone-300 mb-1">
-            <span>Contrast</span>
-            <span>{contrast}%</span>
+          {/* Contrast */}
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-theme-4/70 w-16">Contrast</span>
+            <input
+              type="range" min="50" max="150" value={contrast}
+              onChange={(e) => setContrast(Number(e.target.value))}
+              className="flex-1 h-1 bg-theme-3/20 rounded-lg appearance-none cursor-pointer accent-theme-4"
+            />
           </div>
-          <input
-            type="range" min="50" max="150" value={contrast}
-            onChange={(e) => setContrast(Number(e.target.value))}
-            className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-          />
-        </div>
 
-        <div>
-          <div className="flex justify-between text-xs text-stone-300 mb-1">
-            <span>Saturation</span>
-            <span>{saturation}%</span>
+          {/* Saturation */}
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-theme-4/70 w-16">Saturation</span>
+            <input
+              type="range" min="0" max="200" value={saturation}
+              onChange={(e) => setSaturation(Number(e.target.value))}
+              className="flex-1 h-1 bg-theme-3/20 rounded-lg appearance-none cursor-pointer accent-theme-4"
+            />
           </div>
-          <input
-            type="range" min="0" max="200" value={saturation}
-            onChange={(e) => setSaturation(Number(e.target.value))}
-            className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-          />
         </div>
+      </div>
       </div>
 
       {/* Action Footers */}
-      <div className="flex justify-end gap-3 border-t border-stone-900 pt-4">
-        <button onClick={onCancel} className="px-4 py-2 text-sm text-stone-400 hover:text-white transition-colors">
+      <div className="flex justify-end gap-3 pt-4 mt-2 shrink-0 border-t border-theme-3/10">
+        <button 
+          onClick={onCancel} 
+          disabled={isProcessing}
+          className="px-5 py-2 text-sm font-medium text-theme-4/60 hover:text-theme-4 transition-colors rounded-lg disabled:opacity-50"
+        >
           Cancel
         </button>
-        <button onClick={handleSave} className="px-5 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-all shadow-md">
-          Apply & Upload
+        <button 
+          onClick={handleSave} 
+          disabled={isProcessing}
+          className="px-6 py-2 text-sm font-medium bg-theme-4 text-theme-1 hover:bg-theme-4/90 rounded-lg transition-all disabled:opacity-50 flex items-center gap-2"
+        >
+          {isProcessing ? 'Processing...' : 'Done'}
         </button>
       </div>
     </div>

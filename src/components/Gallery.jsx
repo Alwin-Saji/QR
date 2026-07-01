@@ -252,6 +252,44 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
     }
   };
 
+  const handleGuestDelete = async (photoId) => {
+    if (!window.confirm("Are you sure you want to delete your photo?")) return;
+    
+    try {
+      const photoToDelete = photos.find(p => p.id === photoId);
+      if (!photoToDelete) return;
+      
+      const filePath = getFilePathFromUrl(photoToDelete.url);
+      
+      // Try using the secure RPC function first
+      const { error } = await supabase.rpc('delete_guest_photo', { 
+        p_photo_id: photoId, 
+        p_uploader_id: currentUploaderId 
+      });
+      
+      if (error) {
+        // Fallback if RPC doesn't exist but RLS is relaxed
+        const { error: fallbackError } = await supabase
+          .from('photos')
+          .delete()
+          .eq('id', photoId)
+          .eq('uploader_id', currentUploaderId);
+          
+        if (fallbackError) throw fallbackError;
+      }
+      
+      setPhotos(current => current.filter(p => p.id !== photoId));
+      if (filePath) {
+        await supabase.storage.from('events').remove([filePath]);
+      }
+      
+      toast.success('Photo deleted');
+    } catch (err) {
+      console.error("Error deleting photo:", err);
+      toast.error("Failed to delete photo. Please check database permissions.");
+    }
+  };
+
   const handleRestrictUploader = async (photo) => {
     const uploaderId = photo.uploader_id?.trim() || photo.uploaded_by?.trim();
     const uploaderName = photo.uploaded_by?.trim() || uploaderId || 'Guest';
@@ -401,7 +439,8 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
             onRestrictUploader={() => handleRestrictUploader(photo)}
             onDragStart={(e) => handleDragStart(e, photo.id)}
             onDragEnd={handleDragEnd}
-            onDownload = {handleDownloadClick}
+            onDownload={(e, url, name) => handleDownloadClick(e, url, name)}
+            onGuestDelete={() => handleGuestDelete(photo.id)}
           />
         ))}
       </div>
@@ -568,7 +607,7 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
   );
 }
 
-function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, isSelected, onToggleSelect, isCreator, currentUploaderId, onRestrictUploader, onDragStart, onDragEnd,onDownload }) {
+function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, isSelected, onToggleSelect, isCreator, currentUploaderId, onRestrictUploader, onDragStart, onDragEnd, onDownload, onGuestDelete }) {
   const [showOverlay, setShowOverlay] = useState(false);
   const [isDraggingCard, setIsDraggingCard] = useState(false);
   const safeName = (eventName || 'Event').replace(/[^a-zA-Z0-9]/g, '_');
@@ -668,6 +707,22 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
               <Ban className="w-6 h-6" />
             </div>
             <span className="text-xs font-bold shadow-black drop-shadow-md">Restrict</span>
+          </button>
+         )}
+
+         {isCurrentUploader && !isCreator && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onGuestDelete();
+            }}
+            className="flex flex-col items-center justify-center text-white hover:text-red-200 transition-colors"
+            title="Delete your photo"
+          >
+            <div className="bg-red-500/30 p-3 rounded-full backdrop-blur-md mb-2 hover:bg-red-500/40 transition-colors">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <span className="text-xs font-bold shadow-black drop-shadow-md">Delete</span>
           </button>
          )}
       </div>

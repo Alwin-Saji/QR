@@ -10,7 +10,9 @@ CREATE TABLE events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  user_id UUID REFERENCES auth.users(id)
+  user_id UUID REFERENCES auth.users(id),
+  auto_delete BOOLEAN DEFAULT false,
+  expires_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE photos (

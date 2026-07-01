@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
   const [eventName, setEventName] = useState('');
+  const [autoDelete, setAutoDelete] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [events, setEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -45,9 +46,11 @@ export default function Dashboard() {
 
     try {
       setIsCreating(true);
+      const payload = { name: eventName, user_id: user.id, auto_delete: autoDelete };
+
       const { data, error } = await supabase
         .from('events')
-        .insert([{ name: eventName, user_id: user.id }])
+        .insert([payload])
         .select();
 
       if (error) throw error;
@@ -107,22 +110,34 @@ export default function Dashboard() {
               <h2 className="text-3xl font-heading font-bold text-theme-4 mb-2">Create New Event</h2>
               <p className="text-theme-4/80 mb-6">Start a new real-time photo gallery for your guests.</p>
               
-              <form onSubmit={handleCreateEvent} className="flex flex-col sm:flex-row gap-4 max-w-md w-full">
-                <input
-                  type="text"
-                  value={eventName}
-                  onChange={(e) => setEventName(e.target.value)}
-                  placeholder="E.g., Sarah's Birthday"
-                  className="flex-1 bg-theme-1 border border-theme-3/30 text-theme-4 placeholder:text-theme-4/40 rounded-lg px-4 py-2 focus:ring-2 focus:ring-theme-3 focus:border-theme-3 outline-none transition-all w-full"
-                  disabled={isCreating}
-                />
-                <button
-                  type="submit"
-                  disabled={!eventName.trim() || isCreating}
-                  className="bg-theme-3 text-theme-1 px-6 py-2 rounded-lg font-bold hover:bg-theme-4 disabled:opacity-50 transition-colors whitespace-nowrap"
-                >
-                  {isCreating ? 'Creating...' : 'Create'}
-                </button>
+              <form onSubmit={handleCreateEvent} className="flex flex-col gap-4 max-w-md w-full">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <input
+                    type="text"
+                    value={eventName}
+                    onChange={(e) => setEventName(e.target.value)}
+                    placeholder="E.g., Sarah's Birthday"
+                    className="flex-1 bg-theme-1 border border-theme-3/30 text-theme-4 placeholder:text-theme-4/40 rounded-lg px-4 py-2 focus:ring-2 focus:ring-theme-3 focus:border-theme-3 outline-none transition-all w-full"
+                    disabled={isCreating}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!eventName.trim() || isCreating}
+                    className="bg-theme-3 text-theme-1 px-6 py-2 rounded-lg font-bold hover:bg-theme-4 disabled:opacity-50 transition-colors whitespace-nowrap"
+                  >
+                    {isCreating ? 'Creating...' : 'Create'}
+                  </button>
+                </div>
+                <label className="flex items-center gap-2 text-theme-4/80 text-sm cursor-pointer w-fit">
+                  <input
+                    type="checkbox"
+                    checked={autoDelete}
+                    onChange={(e) => setAutoDelete(e.target.checked)}
+                    disabled={isCreating}
+                    className="w-4 h-4 rounded border-theme-3/30 text-theme-3 focus:ring-theme-3 bg-theme-1 cursor-pointer"
+                  />
+                  Auto-delete event after 24 hours
+                </label>
               </form>
             </div>
           </div>
