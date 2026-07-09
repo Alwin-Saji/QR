@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Download, QrCode, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Download, QrCode, X, Play, Pause } from 'lucide-react';
 import LazyImage from './LazyImage';
 
 export default function PhotoLightbox({
@@ -9,10 +9,30 @@ export default function PhotoLightbox({
   onClose,
   onPrevious,
   onNext,
-  onShowQR
+  onShowQR,
+  startSlideshow = false
 }) {
   const photo = currentIndex === null ? null : photos[currentIndex];
   const hasMultiple = photos.length > 1;
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    if (currentIndex !== null && startSlideshow) {
+      setIsPlaying(true);
+    } else if (currentIndex === null) {
+      setIsPlaying(false);
+    }
+  }, [currentIndex, startSlideshow]);
+
+  useEffect(() => {
+    let interval;
+    if (isPlaying && photo && hasMultiple) {
+      interval = setInterval(() => {
+        onNext();
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, photo, hasMultiple, onNext]);
 
   useEffect(() => {
     if (!photo) return undefined;
@@ -90,6 +110,17 @@ export default function PhotoLightbox({
           </div>
 
           <div className="flex items-center justify-center gap-2">
+            {hasMultiple && (
+              <button
+                type="button"
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="flex items-center gap-2 rounded-full border border-theme-3/25 bg-theme-1/50 px-4 py-2 text-sm font-bold text-theme-4 transition-colors hover:bg-theme-1"
+                title={isPlaying ? "Pause Slideshow" : "Play Slideshow"}
+              >
+                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {isPlaying ? 'Pause' : 'Play'}
+              </button>
+            )}
             <a
               href={`${photo.url}?download=${downloadName}`}
               download={downloadName}

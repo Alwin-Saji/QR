@@ -13,6 +13,9 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
   const [loading, setLoading] = useState(true);
   const [selectedPhotoForQR, setSelectedPhotoForQR] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [isSlideshowMode, setIsSlideshowMode] = useState(false);
+  const [showTopCarousel, setShowTopCarousel] = useState(false);
+  const [topCarouselIndex, setTopCarouselIndex] = useState(0);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -27,7 +30,7 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
   const loaderRef = useRef(null);
   const LIMIT = 50;
 
-  const {isOnline,notifyDownloadQueued} = useSync();
+  const { isOnline, notifyDownloadQueued } = useSync();
 
   const handleDownloadClick = async (e, url, filename) => {
     e.stopPropagation(); // Prevents the lightbox from opening
@@ -44,6 +47,30 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
       toast.error('Failed to download photo');
     }
   };
+
+  useEffect(() => {
+    const handleStartSlideshow = () => {
+      if (photos.length > 0) {
+        setLightboxIndex(0);
+        setIsSlideshowMode(true);
+      } else {
+        toast.error('No photos to show yet!');
+      }
+    };
+
+    window.addEventListener('start-slideshow', handleStartSlideshow);
+    return () => window.removeEventListener('start-slideshow', handleStartSlideshow);
+  }, [photos]);
+
+  useEffect(() => {
+    let interval;
+    if (showTopCarousel && photos.length > 0) {
+      interval = setInterval(() => {
+        setTopCarouselIndex(prev => (prev + 1) % photos.length);
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [showTopCarousel, photos.length]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -254,19 +281,19 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
 
   const handleGuestDelete = async (photoId) => {
     if (!window.confirm("Are you sure you want to delete your photo?")) return;
-    
+
     try {
       const photoToDelete = photos.find(p => p.id === photoId);
       if (!photoToDelete) return;
-      
+
       const filePath = getFilePathFromUrl(photoToDelete.url);
-      
+
       // Try using the secure RPC function first
-      const { error } = await supabase.rpc('delete_guest_photo', { 
-        p_photo_id: photoId, 
-        p_uploader_id: currentUploaderId 
+      const { error } = await supabase.rpc('delete_guest_photo', {
+        p_photo_id: photoId,
+        p_uploader_id: currentUploaderId
       });
-      
+
       if (error) {
         // Fallback if RPC doesn't exist but RLS is relaxed
         const { error: fallbackError } = await supabase
@@ -274,15 +301,15 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
           .delete()
           .eq('id', photoId)
           .eq('uploader_id', currentUploaderId);
-          
+
         if (fallbackError) throw fallbackError;
       }
-      
+
       setPhotos(current => current.filter(p => p.id !== photoId));
       if (filePath) {
         await supabase.storage.from('events').remove([filePath]);
       }
-      
+
       toast.success('Photo deleted');
     } catch (err) {
       console.error("Error deleting photo:", err);
@@ -386,9 +413,12 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
 
   if (photos.length === 0) {
     return (
-      <div className="text-center py-12 text-theme-4/60">
-        <p className="text-xl font-heading font-bold">No photos yet!</p>
-        <p className="mt-2">Be the first to capture a moment.</p>
+      <div className="flex flex-col items-center justify-center py-20 text-theme-4/80">
+        <div className="w-24 h-24 mb-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner backdrop-blur-md">
+          <QrCode className="w-10 h-10 opacity-50" />
+        </div>
+        <p className="text-3xl font-heading font-bold text-theme-4">No photos yet</p>
+        <p className="mt-2 text-theme-4/60">Be the first to capture a moment!</p>
       </div>
     );
   }
@@ -401,6 +431,18 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
             {photos.length} Photo{photos.length !== 1 ? 's' : ''}
           </p>
           <div className="flex gap-2">
+            <label className="flex items-center gap-3 px-4 py-2 bg-theme-2 hover:bg-theme-2/80 text-theme-4 border border-theme-3/20 rounded-full font-bold cursor-pointer transition-all shadow-sm group">
+              <span className="hidden sm:inline">Top Carousel</span>
+              <div className={`relative w-11 h-6 rounded-full transition-colors duration-300 ease-in-out ${showTopCarousel ? 'bg-theme-1 shadow-[0_0_8px_var(--theme-3-color,rgba(0,0,0,0.3))]' : 'bg-theme-4/20 group-hover:bg-theme-4/30'}`}>
+                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-transform duration-300 ease-in-out shadow-sm ${showTopCarousel ? 'translate-x-5' : 'translate-x-0'}`}></div>
+              </div>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={showTopCarousel}
+                onChange={(e) => setShowTopCarousel(e.target.checked)}
+              />
+            </label>
             {selectionMode && (
               <button
                 onClick={handleBulkDelete}
@@ -423,7 +465,69 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4 pb-24">
+      {showTopCarousel && photos.length > 0 && (
+        <div className="w-full px-4 mb-10 fade-in">
+          <div className="relative w-full overflow-hidden rounded-[2rem] bg-theme-2/30 border border-theme-3/10 p-4 md:p-6 shadow-2xl backdrop-blur-sm">
+            <div className="relative flex items-center justify-center w-full h-[250px] sm:h-[450px] perspective-1000">
+              {photos.map((photo, i) => {
+                let diff = i - topCarouselIndex;
+                if (diff > photos.length / 2) diff -= photos.length;
+                if (diff < -photos.length / 2) diff += photos.length;
+
+                let zIndex = 10 - Math.abs(diff);
+                let transformClass = "";
+                let blurClass = "";
+                let isActive = diff === 0;
+
+                if (diff === 0) {
+                  transformClass = "translate-x-0 scale-100 opacity-100";
+                  blurClass = "blur-none";
+                } else if (diff === -1) {
+                  transformClass = "-translate-x-[55%] sm:-translate-x-[60%] scale-[0.80] sm:scale-75 opacity-40 hover:opacity-80";
+                  blurClass = "blur-[2px] hover:blur-none";
+                } else if (diff === 1) {
+                  transformClass = "translate-x-[55%] sm:translate-x-[60%] scale-[0.80] sm:scale-75 opacity-40 hover:opacity-80";
+                  blurClass = "blur-[2px] hover:blur-none";
+                } else if (diff < -1) {
+                  transformClass = "-translate-x-full scale-50 opacity-0 pointer-events-none";
+                  blurClass = "blur-[4px]";
+                } else {
+                  transformClass = "translate-x-full scale-50 opacity-0 pointer-events-none";
+                  blurClass = "blur-[4px]";
+                }
+
+                return (
+                  <div
+                    key={photo.id}
+                    className={`absolute w-[65%] sm:w-1/2 h-full rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.3)] border border-theme-3/20 transition-all duration-700 ease-out cursor-pointer group ${transformClass} ${blurClass}`}
+                    style={{ zIndex }}
+                    onClick={() => {
+                      if (isActive) setLightboxIndex(i);
+                      else setTopCarouselIndex(i);
+                    }}
+                  >
+                    <img src={photo.url} className="w-full h-full object-cover" alt="Carousel item" />
+
+                    <div className={`absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity duration-500 ${isActive ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+                      <div className="bg-white/20 backdrop-blur-md p-4 rounded-full text-white transform scale-90 group-hover:scale-100 transition-transform">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg>
+                      </div>
+                    </div>
+
+                    <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-6 pointer-events-none transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                      <p className="text-white font-bold text-center text-lg drop-shadow-md">
+                        By {photo.uploaded_by?.trim() || photo.uploader_id?.trim() || 'Guest'}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 p-4 pb-24">
         {photos.map((photo, index) => (
           <PhotoCard
             key={photo.id}
@@ -458,13 +562,18 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
         photos={photos}
         currentIndex={lightboxIndex}
         eventName={eventName}
-        onClose={closeLightbox}
+        onClose={() => {
+          closeLightbox();
+          setIsSlideshowMode(false);
+        }}
         onPrevious={showPreviousPhoto}
         onNext={showNextPhoto}
         onShowQR={(photo) => {
           setSelectedPhotoForQR(photo);
           closeLightbox();
+          setIsSlideshowMode(false);
         }}
+        startSlideshow={isSlideshowMode}
       />
 
       {selectedPhotoForQR && (
@@ -540,16 +649,14 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
               <button
                 type="button"
                 onClick={() => setRemoveRestrictedPhotos((value) => !value)}
-                className={`w-full rounded-xl border px-4 py-3 text-left transition-all ${
-                  removeRestrictedPhotos
+                className={`w-full rounded-xl border px-4 py-3 text-left transition-all ${removeRestrictedPhotos
                     ? 'border-red-200/40 bg-red-500/15 text-red-50'
                     : 'border-theme-3/25 bg-theme-1/35 text-theme-4 hover:bg-theme-1/50'
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-3">
-                  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                    removeRestrictedPhotos ? 'border-red-100 bg-red-100 text-theme-1' : 'border-theme-4/45'
-                  }`}>
+                  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${removeRestrictedPhotos ? 'border-red-100 bg-red-100 text-theme-1' : 'border-theme-4/45'
+                    }`}>
                     {removeRestrictedPhotos && <CheckCircle2 className="h-3.5 w-3.5" />}
                   </span>
                   <span className="min-w-0">
@@ -619,7 +726,7 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
   if (selectionMode) {
     return (
       <div
-        className={`relative aspect-square rounded-2xl overflow-hidden shadow-md cursor-pointer transition-all duration-300 border-4 ${isSelected ? 'border-theme-3' : 'border-transparent'}`}
+        className={`relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md cursor-pointer transition-all duration-300 border-4 ${isSelected ? 'border-theme-3' : 'border-transparent'} [content-visibility:auto]`}
         onClick={onToggleSelect}
       >
         <LazyImage
@@ -640,7 +747,7 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
 
   return (
     <div
-      className="relative aspect-square rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:shadow-theme-3/20 transition-all duration-300 cursor-pointer"
+      className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group animate-fade-in-up [content-visibility:auto]"
       onMouseEnter={() => setShowOverlay(true)}
       onMouseLeave={() => setShowOverlay(false)}
       onClick={() => {
@@ -667,34 +774,34 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
       </div>
 
       <div
-        className={`absolute inset-0 bg-black/40 transition-opacity duration-300 flex items-center justify-center gap-4 ${showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 flex items-center justify-center gap-4 ${showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       >
-         <button
+        <button
           onClick={(e) => onDownload(e, photo.url, downloadName)}
           className="flex flex-col items-center justify-center text-white hover:text-theme-3 transition-colors"
           title="Download Directly"
-         >
-            <div className="bg-white/20 p-3 rounded-full backdrop-blur-md mb-2 hover:bg-white/30 transition-colors">
-              <Download className="w-6 h-6" />
-            </div>
-            <span className="text-xs font-bold shadow-black drop-shadow-md">Save</span>
-         </button>
+        >
+          <div className="bg-white/20 p-3 rounded-full backdrop-blur-md mb-2 hover:bg-white/30 transition-colors">
+            <Download className="w-6 h-6" />
+          </div>
+          <span className="text-xs font-bold shadow-black drop-shadow-md">Save</span>
+        </button>
 
-         <button
+        <button
           onClick={(e) => {
             e.stopPropagation();
             onShowQR();
           }}
           className="flex flex-col items-center justify-center text-white hover:text-theme-3 transition-colors"
           title="Show QR Code"
-         >
-            <div className="bg-white/20 p-3 rounded-full backdrop-blur-md mb-2 hover:bg-white/30 transition-colors">
-              <QrCode className="w-6 h-6" />
-            </div>
-            <span className="text-xs font-bold shadow-black drop-shadow-md">Scan QR</span>
-         </button>
+        >
+          <div className="bg-white/20 p-3 rounded-full backdrop-blur-md mb-2 hover:bg-white/30 transition-colors">
+            <QrCode className="w-6 h-6" />
+          </div>
+          <span className="text-xs font-bold shadow-black drop-shadow-md">Scan QR</span>
+        </button>
 
-         {isCreator && !isCurrentUploader && (
+        {isCreator && !isCurrentUploader && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -708,9 +815,9 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
             </div>
             <span className="text-xs font-bold shadow-black drop-shadow-md">Restrict</span>
           </button>
-         )}
+        )}
 
-         {isCurrentUploader && !isCreator && (
+        {isCurrentUploader && !isCreator && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -724,7 +831,7 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
             </div>
             <span className="text-xs font-bold shadow-black drop-shadow-md">Delete</span>
           </button>
-         )}
+        )}
       </div>
     </div>
   );

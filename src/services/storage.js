@@ -99,9 +99,19 @@ export const uploadPhoto = async (eventId, file, uploader, options = {}) => {
 
     const downloadURL = publicUrlData.publicUrl;
 
-    // 1-day TTL
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 1);
+    // Check if event has auto_delete enabled
+    const { data: eventData } = await supabase
+      .from('events')
+      .select('auto_delete')
+      .eq('id', eventId)
+      .single();
+
+    let expiresAtStr = null;
+    if (eventData && eventData.auto_delete) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 1);
+      expiresAtStr = expiresAt.toISOString();
+    }
 
     // Insert record into Supabase Database
     const { data: dbData, error: dbError } = await supabase
@@ -112,7 +122,7 @@ export const uploadPhoto = async (eventId, file, uploader, options = {}) => {
           url: downloadURL,
           uploaded_by: uploadedBy,
           uploader_id: uploaderId,
-          expires_at: expiresAt.toISOString(),
+          expires_at: expiresAtStr,
         }
       ])
       .select()

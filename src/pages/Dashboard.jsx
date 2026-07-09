@@ -101,44 +101,68 @@ export default function Dashboard() {
         </div>
 
         {/* Create Event Card */}
-        <div className="bg-theme-2 rounded-2xl shadow-lg border border-theme-3/20 p-8">
-          <div className="flex flex-col md:flex-row items-start gap-6">
-            <div className="bg-theme-3/20 p-4 rounded-xl text-theme-3">
-              <Plus className="w-8 h-8" />
+        <div className="bg-theme-1 border-2 border-theme-3 rounded-2xl p-6 sm:p-8 lg:p-12 mb-8 lg:mb-12 shadow-[4px_4px_0_0_rgba(var(--color-theme-3),1)] lg:shadow-[8px_8px_0_0_rgba(var(--color-theme-3),1)]">
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center justify-between">
+            <div className="w-full lg:w-1/2 flex flex-col items-start text-left">
+              <div className="inline-block bg-theme-3 text-theme-1 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold tracking-wider uppercase mb-4 sm:mb-6">
+                Host a Gallery
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-black text-theme-4 mb-3 sm:mb-4 leading-tight">
+                Create a New <br className="hidden sm:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-theme-3 to-theme-4">Shared Event</span>
+              </h2>
+              <p className="text-base sm:text-lg text-theme-4/70 mb-4 sm:mb-8 max-w-sm">
+                Set up a real-time collaborative photo album for your guests in just a few seconds.
+              </p>
             </div>
-            <div className="flex-1 w-full">
-              <h2 className="text-3xl font-heading font-bold text-theme-4 mb-2">Create New Event</h2>
-              <p className="text-theme-4/80 mb-6">Start a new real-time photo gallery for your guests.</p>
-              
-              <form onSubmit={handleCreateEvent} className="flex flex-col gap-4 max-w-md w-full">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <input
-                    type="text"
-                    value={eventName}
-                    onChange={(e) => setEventName(e.target.value)}
-                    placeholder="E.g., Sarah's Birthday"
-                    className="flex-1 bg-theme-1 border border-theme-3/30 text-theme-4 placeholder:text-theme-4/40 rounded-lg px-4 py-2 focus:ring-2 focus:ring-theme-3 focus:border-theme-3 outline-none transition-all w-full"
-                    disabled={isCreating}
-                  />
-                  <button
-                    type="submit"
-                    disabled={!eventName.trim() || isCreating}
-                    className="bg-theme-3 text-theme-1 px-6 py-2 rounded-lg font-bold hover:bg-theme-4 disabled:opacity-50 transition-colors whitespace-nowrap"
-                  >
-                    {isCreating ? 'Creating...' : 'Create'}
-                  </button>
-                </div>
-                <label className="flex items-center gap-2 text-theme-4/80 text-sm cursor-pointer w-fit">
-                  <input
-                    type="checkbox"
-                    checked={autoDelete}
-                    onChange={(e) => setAutoDelete(e.target.checked)}
-                    disabled={isCreating}
-                    className="w-4 h-4 rounded border-theme-3/30 text-theme-3 focus:ring-theme-3 bg-theme-1 cursor-pointer"
-                  />
-                  Auto-delete event after 24 hours
-                </label>
-              </form>
+            
+            <div className="w-full lg:w-1/2 bg-theme-2 p-6 sm:p-8 rounded-2xl border border-theme-3/20 relative">
+               <div className="absolute -top-4 -right-4 w-16 sm:w-20 h-16 sm:h-20 bg-theme-3/20 rounded-full blur-2xl pointer-events-none"></div>
+               <div className="absolute -bottom-4 -left-4 w-16 sm:w-20 h-16 sm:h-20 bg-theme-4/20 rounded-full blur-2xl pointer-events-none"></div>
+               
+               <form onSubmit={handleCreateEvent} className="relative z-10 flex flex-col gap-5 sm:gap-6">
+                 <div>
+                   <label className="block text-xs sm:text-sm font-bold text-theme-4/80 mb-2 uppercase tracking-wide">Event Name</label>
+                   <input
+                     type="text"
+                     value={eventName}
+                     onChange={(e) => setEventName(e.target.value)}
+                     placeholder="E.g., Sarah's Birthday"
+                     className="w-full bg-theme-1 border-2 border-theme-3/30 text-theme-4 placeholder:text-theme-4/30 rounded-xl px-4 sm:px-5 py-3 sm:py-4 focus:ring-0 focus:border-theme-3 outline-none transition-colors text-base sm:text-lg font-medium"
+                     disabled={isCreating}
+                   />
+                 </div>
+                 
+                 {/* Custom Toggle Switch for Checklist */}
+                 <div className="flex items-center justify-between bg-theme-1 border-2 border-theme-3/10 p-3 sm:p-4 rounded-xl hover:border-theme-3/30 transition-colors cursor-pointer group" onClick={() => !isCreating && setAutoDelete(!autoDelete)}>
+                    <div className="pr-2 sm:pr-4">
+                      <h4 className="font-bold text-theme-4 text-sm sm:text-base group-hover:text-theme-3 transition-colors">Auto-Delete Event</h4>
+                      <p className="text-[10px] sm:text-xs text-theme-4/60 mt-0.5 sm:mt-1">Automatically remove all photos after 24 hours.</p>
+                    </div>
+                    
+                    <div className="relative flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={autoDelete}
+                        onChange={(e) => setAutoDelete(e.target.checked)}
+                        disabled={isCreating}
+                        className="sr-only"
+                      />
+                      <div className={`w-12 sm:w-14 h-7 sm:h-8 rounded-full transition-colors duration-300 ease-in-out flex items-center px-1 ${autoDelete ? 'bg-theme-3' : 'bg-theme-4/20'}`}>
+                         <div className={`w-5 sm:w-6 h-5 sm:h-6 rounded-full bg-theme-1 shadow-md transform transition-transform duration-300 ease-in-out ${autoDelete ? 'translate-x-5 sm:translate-x-6' : 'translate-x-0'}`}></div>
+                      </div>
+                    </div>
+                 </div>
+
+                 <button
+                   type="submit"
+                   disabled={!eventName.trim() || isCreating}
+                   className="w-full bg-theme-4 text-theme-1 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-theme-3 hover:text-theme-1 disabled:opacity-50 transition-colors shadow-lg mt-1 sm:mt-2 flex items-center justify-center gap-2 group"
+                 >
+                   <span>{isCreating ? 'Creating...' : 'Launch Gallery'}</span>
+                   {!isCreating && <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 group-hover:translate-x-1 transition-transform" />}
+                 </button>
+               </form>
             </div>
           </div>
         </div>
