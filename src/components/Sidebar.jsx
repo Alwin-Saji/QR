@@ -95,7 +95,7 @@ export default function Sidebar() {
       {/* Mobile Toggle Button */}
       <button
         onClick={toggleSidebar}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-theme-3 text-theme-1 rounded-md shadow-md hover:bg-theme-4 transition-colors"
+        className="md:hidden fixed top-4 left-4 z-[60] p-2 bg-theme-3 text-theme-1 rounded-md shadow-md hover:bg-theme-4 transition-colors"
       >
         {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
@@ -103,7 +103,7 @@ export default function Sidebar() {
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+          className="fixed inset-0 bg-black/50 z-50 md:hidden transition-opacity"
           onClick={toggleSidebar}
         />
       )}
@@ -113,7 +113,7 @@ export default function Sidebar() {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 left-0 h-screen bg-theme-2 border-r border-theme-3/20 flex flex-col z-40 transition-all duration-300 ease-in-out
+        className={`fixed top-0 left-0 h-screen bg-theme-2 border-r border-theme-3/20 flex flex-col z-50 transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'} 
           ${isHovered ? 'md:w-64 shadow-2xl' : 'md:w-20'}
         `}
@@ -123,8 +123,8 @@ export default function Sidebar() {
         {/* Logo Section */}
         <div className={`border-b border-theme-3/20 flex items-center h-20 transition-all duration-300 ${isHovered || isOpen ? 'px-6' : 'px-0 justify-center'}`}>
           <Camera className="w-8 h-8 text-theme-3 flex-shrink-0" />
-          <span className={`font-heading font-bold text-4xl text-theme-4 whitespace-nowrap overflow-hidden transition-all duration-300 ${isHovered || isOpen ? 'ml-3 opacity-100 max-w-xs' : 'opacity-0 max-w-0 ml-0'}`}>
-            ARC
+          <span className={`font-heading font-bold text-3xl text-theme-4 whitespace-nowrap overflow-hidden transition-all duration-300 ${isHovered || isOpen ? 'ml-3 opacity-100 max-w-xs' : 'opacity-0 max-w-0 ml-0'}`}>
+            Mementos
           </span>
         </div>
 
@@ -138,7 +138,7 @@ export default function Sidebar() {
               className={({ isActive }) =>
                 `flex items-center rounded-lg font-bold transition-all duration-300 ${isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
                 } ${isActive
-                  ? 'bg-theme-3/20 text-theme-3'
+                  ? 'bg-theme-4 text-theme-1'
                   : 'text-theme-4/80 hover:bg-theme-1/50 hover:text-theme-4'
                 }`
               }

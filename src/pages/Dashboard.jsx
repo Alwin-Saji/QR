@@ -157,7 +157,7 @@ export default function Dashboard() {
                  <button
                    type="submit"
                    disabled={!eventName.trim() || isCreating}
-                   className="w-full bg-theme-4 text-theme-1 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-theme-3 hover:text-theme-1 disabled:opacity-50 transition-colors shadow-lg mt-1 sm:mt-2 flex items-center justify-center gap-2 group"
+                   className="w-full bg-theme-4/80 text-theme-1 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-theme-4 hover:text-theme-1 disabled:opacity-50 transition-colors shadow-lg mt-1 sm:mt-2 flex items-center justify-center gap-2 group"
                  >
                    <span>{isCreating ? 'Creating...' : 'Launch Gallery'}</span>
                    {!isCreating && <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 group-hover:translate-x-1 transition-transform" />}
