@@ -1,10 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Camera, ArrowRight } from 'lucide-react';
 
 export default function Navigation({ user }) {
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 50) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
   return (
-    <nav className="absolute w-full z-50 top-6 md:top-8 left-0 flex justify-center pointer-events-none">
+    <nav className={`fixed w-full z-50 top-6 md:top-8 left-0 flex justify-center pointer-events-none transition-transform duration-500 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-[150%]'}`}>
       <div className="w-[95%] max-w-5xl bg-theme-4 rounded-[40px] border-2 border-[#0a0a0a]/90 flex flex-col justify-between shadow-[0_20px_50px_rgba(238,223,204,0.15)] pointer-events-auto relative group hover:shadow-[0_20px_60px_rgba(238,223,204,0.25)] transition-all duration-500 overflow-hidden">
 
         {/* Top Sprocket Holes (Punched Out) */}

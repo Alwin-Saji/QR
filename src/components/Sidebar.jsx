@@ -1,18 +1,24 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Camera, Home, Calendar, Menu, X, Info, LogOut, LogIn, ShieldOff, Unlock, UserX } from 'lucide-react';
+import { Camera, Home, Calendar, Menu, X, Info, LogOut, LogIn, ShieldOff, Unlock, Activity, Folder, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 
 export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false); // Mobile toggle state
-  const [isHovered, setIsHovered] = useState(false); // Desktop hover state
+  const [isOpen, setIsOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [eventDetails, setEventDetails] = useState(null);
   const [restrictedUploaders, setRestrictedUploaders] = useState([]);
   const [canManageRestrictions, setCanManageRestrictions] = useState(false);
+  const [userEvents, setUserEvents] = useState([]);
+  const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
+
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const eventId = location.pathname.match(/^\/event\/([^/]+)/)?.[1];
+  const isEventPage = location.pathname.startsWith('/event/');
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -31,49 +37,71 @@ export default function Sidebar() {
   };
 
   useEffect(() => {
-    if (!eventId || !user) {
-      Promise.resolve().then(() => setRestrictedUploaders([]));
-      Promise.resolve().then(() => setCanManageRestrictions(false));
+    if (!eventId) {
+      setEventDetails(null);
+      setRestrictedUploaders([]);
+      setCanManageRestrictions(false);
       return;
     }
 
-    const fetchRestrictedUploaders = async () => {
+    const fetchEventData = async () => {
       const { data: eventData, error: eventError } = await supabase
         .from('events')
-        .select('user_id')
+        .select('*')
         .eq('id', eventId)
         .single();
+
+      if (eventData) {
+        setEventDetails(eventData);
+      }
+
+      if (!user) {
+        setRestrictedUploaders([]);
+        setCanManageRestrictions(false);
+        return;
+      }
 
       const isCreator = !eventError && eventData?.user_id === user.id;
       setCanManageRestrictions(isCreator);
 
-      if (!isCreator) {
-        setRestrictedUploaders([]);
-        return;
-      }
+      if (!isCreator) return;
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('restricted_uploaders')
         .select('*')
         .eq('event_id', eventId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error("Error fetching restricted uploaders:", error);
-      } else {
-        setRestrictedUploaders(data || []);
-      }
+      setRestrictedUploaders(data || []);
     };
 
-    fetchRestrictedUploaders();
+    fetchEventData();
 
     const handleRestrictionChange = (event) => {
-      if (event.detail?.eventId === eventId) fetchRestrictedUploaders();
+      if (event.detail?.eventId === eventId) fetchEventData();
     };
 
     window.addEventListener('restricted-uploaders-changed', handleRestrictionChange);
     return () => window.removeEventListener('restricted-uploaders-changed', handleRestrictionChange);
   }, [eventId, user]);
+
+  useEffect(() => {
+    if (!user) {
+      setUserEvents([]);
+      return;
+    }
+    const fetchUserEvents = async () => {
+      const { data } = await supabase
+        .from('events')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (data) {
+        setUserEvents(data);
+      }
+    };
+    fetchUserEvents();
+  }, [user]);
 
   const handleUnrestrictUploader = async (uploaderId) => {
     const { error } = await supabase
@@ -82,170 +110,283 @@ export default function Sidebar() {
       .eq('event_id', eventId)
       .eq('uploader_id', uploaderId);
 
-    if (error) {
-      console.error("Error unrestricting uploader:", error);
-      alert("Failed to unrestrict uploader.");
-    } else {
+    if (!error) {
       setRestrictedUploaders(current => current.filter(item => item.uploader_id !== uploaderId));
     }
   };
 
+  const sidebarVariants = {
+    collapsed: { width: '80px', transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } },
+    expanded: { width: '280px', transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }
+  };
+
+  const textVariants = {
+    collapsed: { opacity: 0, x: -10, display: 'none', transition: { duration: 0.1 } },
+    expanded: { opacity: 1, x: 0, display: 'block', transition: { delay: 0.1, duration: 0.2 } }
+  };
+
   return (
     <>
-      {/* Mobile Toggle Button */}
+      {/* Mobile Toggle */}
       <button
         onClick={toggleSidebar}
-        className="md:hidden fixed top-4 left-4 z-[60] p-2 bg-theme-3 text-theme-1 rounded-md shadow-md hover:bg-theme-4 transition-colors"
+        className="md:hidden fixed top-4 left-4 z-[60] p-2 bg-[#111] border border-white/10 text-white rounded-lg shadow-md"
       >
         {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
 
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 md:hidden transition-opacity"
-          onClick={toggleSidebar}
-        />
-      )}
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 md:hidden"
+            onClick={toggleSidebar}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Desktop Placeholder to keep content pushed over by w-20 */}
-      <div className="hidden md:block w-20 flex-shrink-0 transition-all duration-300" />
+      {/* Spacer for desktop layout */}
+      <div className="hidden md:block w-[80px] flex-shrink-0" />
 
-      {/* Sidebar Container */}
-      <aside
-        className={`fixed top-0 left-0 h-screen bg-theme-2 border-r border-theme-3/20 flex flex-col z-50 transition-all duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'} 
-          ${isHovered ? 'md:w-64 shadow-2xl' : 'md:w-20'}
-        `}
+      {/* Minimal Edge-to-Edge Sidebar */}
+      <motion.aside
+        initial="collapsed"
+        animate={(isHovered || isOpen) ? "expanded" : "collapsed"}
+        variants={sidebarVariants}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-[#0A0A0A] border-r border-white/5
+          ${isOpen ? 'translate-x-0' : '-translate-x-[150%] md:translate-x-0'} transition-transform duration-300 md:transition-none`}
       >
         {/* Logo Section */}
-        <div className={`border-b border-theme-3/20 flex items-center h-20 transition-all duration-300 ${isHovered || isOpen ? 'px-6' : 'px-0 justify-center'}`}>
-          <Camera className="w-8 h-8 text-theme-3 flex-shrink-0" />
-          <span className={`font-heading font-bold text-3xl text-theme-4 whitespace-nowrap overflow-hidden transition-all duration-300 ${isHovered || isOpen ? 'ml-3 opacity-100 max-w-xs' : 'opacity-0 max-w-0 ml-0'}`}>
+        <div className="h-24 flex items-center px-[22px]">
+          <Camera className="w-9 h-9 text-theme-4 shrink-0" />
+          <motion.span variants={textVariants} className="font-heading font-bold text-3xl text-white ml-5 whitespace-nowrap tracking-wide">
             Mementos
-          </span>
+          </motion.span>
         </div>
 
-        {/* Navigation Links */}
-        <nav className="p-4 flex-1 space-y-2 overflow-x-hidden overflow-y-auto">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              onClick={() => setIsOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center rounded-lg font-bold transition-all duration-300 ${isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
-                } ${isActive
-                  ? 'bg-theme-4 text-theme-1'
-                  : 'text-theme-4/80 hover:bg-theme-1/50 hover:text-theme-4'
-                }`
-              }
-              title={(!isHovered && !isOpen) ? item.name : ""}
+        {/* Event Details Section */}
+        <AnimatePresence>
+          {isEventPage && eventDetails && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="px-3 mb-4"
             >
-              <div className="flex items-center justify-center w-6 h-6 flex-shrink-0">
-                {item.icon}
-              </div>
-              <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${isHovered || isOpen ? 'ml-3 opacity-100 max-w-xs' : 'opacity-0 max-w-0 ml-0'}`}>
-                {item.name}
-              </span>
-            </NavLink>
-          ))}
+              {(isHovered || isOpen) ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-theme-4 rounded-xl p-4 flex flex-col shadow-lg shadow-theme-4/20 border-b-[3px] border-[#0A0A0A]/30 translate-y-[-1px] relative overflow-hidden group"
+                >
+                  {/* Decorative background logo/pattern */}
+                  <div className="absolute -right-4 -bottom-4 opacity-[0.07] group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500">
+                    <Camera className="w-24 h-24 text-[#0A0A0A]" />
+                  </div>
 
-          {canManageRestrictions && (
-            <div className="pt-4 border-t border-theme-3/20 mt-2">
-              {isHovered || isOpen ? (
-                <div className="rounded-xl border border-theme-1 bg-theme-3/5 overflow-hidden transition-all duration-300">
-                  <div className="flex items-center justify-between px-3 py-2.5 bg-theme-3 border-b border-theme-3/20">
-                    <div className="flex items-center gap-2">
-                      <ShieldOff className="w-4 h-4 text-theme-4" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-theme-4">
-                        Restricted
-                      </span>
-                    </div>
-                    <span className="flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-md bg-theme-4 text-theme-1 text-[10px] font-bold">
-                      {restrictedUploaders.length}
+                  <div className="flex justify-between items-start mb-2 relative z-10">
+                    <span className="bg-[#0A0A0A] text-theme-4 text-[9px] uppercase tracking-widest font-black px-2 py-1 rounded shadow-sm">
+                      Live Event
                     </span>
                   </div>
 
-                  {restrictedUploaders.length > 0 ? (
-                    <div className="p-2 space-y-1 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-theme-3/30 scrollbar-track-transparent">
-                      {restrictedUploaders.map((uploader) => (
-                        <div
-                          key={uploader.uploader_id}
-                          className="group flex items-center justify-between px-2 py-2 rounded-lg hover:bg-theme-3/10 transition-colors"
-                        >
-                          <span className="truncate text-sm font-medium text-theme-4/80 group-hover:text-theme-4 transition-colors">
-                            {uploader.display_name || uploader.uploader_id}
-                          </span>
-                          <button
-                            onClick={() => handleUnrestrictUploader(uploader.uploader_id)}
-                            className="text-theme-4 group-hover:text-theme-1 opacity-80 group-hover:opacity-100 transition-all p-1"
-                            title="Restore Access"
-                          >
-                            <Unlock className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="px-3 py-4 text-center">
-                      <span className="text-xs font-medium text-theme-4/50">No restricted users</span>
-                    </div>
-                  )}
-                </div>
+                  <h3 className="text-[#0A0A0A] font-black text-lg leading-tight truncate relative z-10">
+                    {eventDetails.name}
+                  </h3>
+
+                  <p className="text-[#0A0A0A]/70 text-[10px] font-bold mt-1 uppercase tracking-wider relative z-10">
+                    {new Date(eventDetails.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </p>
+                </motion.div>
               ) : (
-                <div
-                  className="flex items-center justify-center w-12 h-12 mx-auto rounded-xl border border-theme-4/40 bg-theme-3/5 text-theme-4 hover:bg-theme-3/20 transition-all duration-300 cursor-pointer relative"
-                  title={`Restricted Guests: ${restrictedUploaders.length}`}
-                  onClick={() => setIsOpen(true)}
-                >
-                  <ShieldOff className="w-5 h-5" />
-                  {restrictedUploaders.length > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 bg-theme-3 text-theme-1 text-[10px] font-bold rounded-full border-2 border-theme-2 shadow-sm">
-                      {restrictedUploaders.length}
-                    </span>
-                  )}
+                <div className="flex justify-center">
+                  <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-theme-4 text-[#0A0A0A] shadow-md shadow-theme-4/20 border-b-[3px] border-[#0A0A0A]/30 translate-y-[-1px]">
+                    <Activity className="w-5 h-5 animate-pulse" />
+                  </div>
                 </div>
               )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Navigation */}
+        <nav className={`flex-1 space-y-1 overflow-y-auto scrollbar-none ${!(isEventPage && eventDetails) ? 'mt-4' : ''}`}>
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+            return (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                onClick={() => setIsOpen(false)}
+                className={`relative flex items-center h-12 mx-3 my-1 px-3.5 rounded-lg group transition-all duration-300 ${isActive ? 'bg-theme-4 shadow-md shadow-theme-4/20 border-b-[3px] border-[#0A0A0A]/30 translate-y-[-1px]' : 'hover:bg-white/10 hover:scale-[0.98]'}`}
+              >
+                <div className="relative z-10 flex items-center w-full">
+                  <div className={`flex items-center justify-center shrink-0 w-8 transition-all duration-300 ${isActive ? 'text-[#0A0A0A] scale-110' : 'text-gray-500 group-hover:text-white group-hover:-rotate-6'}`}>
+                    {item.icon}
+                  </div>
+                  <motion.span variants={textVariants} className={`ml-4 text-[15px] whitespace-nowrap transition-all duration-300 ${isActive ? 'text-[#0A0A0A] font-bold tracking-wide' : 'text-gray-400 group-hover:text-white group-hover:tracking-wider'}`}>
+                    {item.name}
+                  </motion.span>
+                </div>
+              </NavLink>
+            );
+          })}
+
+          {/* User Events Section */}
+          {user && userEvents.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-white/5">
+              <button
+                onClick={() => setIsEventsDropdownOpen(!isEventsDropdownOpen)}
+                className="w-full relative flex items-center h-12 mx-3 px-3.5 rounded-lg group hover:bg-white/5 transition-all duration-300"
+              >
+                <div className="flex items-center w-full">
+                  <div className="flex items-center justify-center shrink-0 w-8 text-gray-500 group-hover:text-white transition-colors">
+                    <Folder className="w-5 h-5" />
+                  </div>
+                  <motion.div variants={textVariants} className="ml-4 flex-1 overflow-hidden pr-2">
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-[15px] text-gray-400 group-hover:text-white font-medium whitespace-nowrap transition-colors">
+                        Your Events
+                      </span>
+                      <ChevronDown className={`w-4 h-4 shrink-0 text-gray-500 transition-transform duration-300 ${isEventsDropdownOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                  </motion.div>
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {isEventsDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-1 mt-1">
+                      {userEvents.map((event) => {
+                        const isActive = location.pathname === `/event/${event.id}`;
+                        return (
+                          <NavLink
+                            key={event.id}
+                            to={`/event/${event.id}`}
+                            onClick={() => setIsOpen(false)}
+                            className={`relative flex items-center h-10 mx-3 px-3.5 rounded-lg group transition-all duration-300 ${isActive ? 'bg-white/5' : 'hover:bg-white/5'}`}
+                          >
+                            <div className="flex items-center w-full">
+                              <div className="flex items-center justify-center shrink-0 w-8">
+                                <div className={`flex items-center justify-center w-5 h-5 rounded-md text-[9px] font-bold transition-all duration-300 ${isActive ? 'bg-theme-4 text-[#0A0A0A] shadow-[0_0_10px_rgba(var(--theme-4-rgb),0.4)]' : 'bg-white/10 text-gray-400 group-hover:bg-white/20 group-hover:text-white'}`}>
+                                  {event.name.charAt(0).toUpperCase()}
+                                </div>
+                              </div>
+                              <motion.span 
+                                variants={textVariants} 
+                                initial="collapsed"
+                                animate={(isHovered || isOpen) ? 'expanded' : 'collapsed'}
+                                className={`ml-4 text-[13px] whitespace-nowrap truncate transition-all duration-300 ${isActive ? 'text-white font-semibold' : 'text-gray-400 font-medium group-hover:text-gray-200'}`}
+                              >
+                                {event.name}
+                              </motion.span>
+                            </div>
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
+
+          {/* Restrictions Section */}
+          <AnimatePresence>
+            {isEventPage && canManageRestrictions && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-8 pt-6 border-t border-white/5"
+              >
+                {(isHovered || isOpen) ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mx-4 bg-white/5 rounded-xl border border-white/5 overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between px-4 py-3 bg-white/5 border-b border-white/5">
+                      <div className="flex items-center gap-2">
+                        <ShieldOff className="w-4 h-4 text-theme-4" />
+                        <span className="text-[11px] uppercase tracking-widest text-gray-400 font-bold">Restricted</span>
+                      </div>
+                      <span className="bg-theme-4/20 text-theme-4 text-xs font-bold px-2 py-0.5 rounded-full">
+                        {restrictedUploaders.length}
+                      </span>
+                    </div>
+
+                    {restrictedUploaders.length > 0 ? (
+                      <div className="p-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+                        {restrictedUploaders.map((u) => (
+                          <div key={u.uploader_id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 group">
+                            <span className="text-sm text-gray-400 group-hover:text-white truncate">
+                              {u.display_name || 'Guest'}
+                            </span>
+                            <button onClick={() => handleUnrestrictUploader(u.uploader_id)} className="text-gray-500 hover:text-theme-4">
+                              <Unlock className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-5 text-center text-sm text-gray-600">No restricted users</div>
+                    )}
+                  </motion.div>
+                ) : (
+                  <div className="flex justify-center">
+                    <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 text-gray-400">
+                      <ShieldOff className="w-5 h-5" />
+                      {restrictedUploaders.length > 0 && (
+                        <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-theme-4 border-2 border-[#0A0A0A] rounded-full" />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </nav>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-theme-3/20 flex flex-col gap-2">
+        <div className="pb-6 pt-4 border-t border-white/5 flex flex-col gap-1">
           <button
             onClick={handleAuthAction}
-            className={`flex items-center rounded-lg font-bold transition-all duration-300 ${isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
-              } ${user ? 'text-red-400 hover:bg-red-400/10' : 'text-theme-3 hover:bg-theme-3/10'}`}
-            title={(!isHovered && !isOpen) ? (user ? "Sign Out" : "Sign In") : ""}
+            className={`relative flex items-center h-12 mx-3 px-3.5 rounded-lg group transition-all duration-300 hover:scale-[0.98] ${user ? 'hover:bg-red-500/20 text-gray-400 hover:text-red-400' : 'hover:bg-white/10 text-gray-400 hover:text-white'}`}
           >
-            <div className="flex items-center justify-center w-6 h-6 flex-shrink-0">
+            <div className={`flex items-center justify-center shrink-0 w-8 transition-all duration-300 ${user ? 'group-hover:rotate-6 text-gray-500 group-hover:text-red-400' : 'group-hover:-rotate-6 text-gray-500 group-hover:text-white'}`}>
               {user ? <LogOut className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
             </div>
-            <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${isHovered || isOpen ? 'ml-3 opacity-100 max-w-xs' : 'opacity-0 max-w-0 ml-0'}`}>
+            <motion.span variants={textVariants} className="ml-4 text-[15px] font-medium whitespace-nowrap transition-all duration-300 group-hover:tracking-wider">
               {user ? "Sign Out" : "Sign In"}
-            </span>
+            </motion.span>
           </button>
 
           <a
             href="https://github.com/Alwin-Saji/QR"
             target="_blank"
             rel="noreferrer"
-            className={`flex items-center rounded-lg font-bold text-theme-4/80 hover:bg-theme-1/50 hover:text-theme-4 transition-all duration-300 ${isHovered || isOpen ? 'px-4 py-3' : 'justify-center p-3 w-12 mx-auto'
-              }`}
-            title={(!isHovered && !isOpen) ? "About ARC" : ""}
+            className="relative flex items-center h-12 mx-3 px-3.5 rounded-lg group hover:bg-white/10 hover:scale-[0.98] text-gray-400 hover:text-white transition-all duration-300"
           >
-            <div className="flex items-center justify-center w-6 h-6 flex-shrink-0">
+            <div className="flex items-center justify-center shrink-0 w-8 transition-all duration-300 group-hover:scale-110 text-gray-500 group-hover:text-white">
               <Info className="w-5 h-5" />
             </div>
-            <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${isHovered || isOpen ? 'ml-3 opacity-100 max-w-xs' : 'opacity-0 max-w-0 ml-0'}`}>
+            <motion.span variants={textVariants} className="ml-4 text-[15px] font-medium whitespace-nowrap transition-all duration-300 group-hover:tracking-wider">
               About ARC
-            </span>
+            </motion.span>
           </a>
         </div>
-      </aside>
+      </motion.aside>
     </>
   );
 }

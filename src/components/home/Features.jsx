@@ -1,18 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const SpinningStar = () => (
-  <motion.svg 
-    animate={{ rotate: 360 }}
-    transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-    width="160" height="160" viewBox="0 0 160 160" 
-    className="absolute -top-10 right-0 opacity-20 text-theme-4 pointer-events-none hidden md:block"
-  >
-    <path fill="none" stroke="currentColor" strokeWidth="0.5" d="M80,0 L80,160 M0,80 L160,80 M23.4,23.4 L136.6,136.6 M23.4,136.6 L136.6,23.4 M40,10 L120,150 M120,10 L40,150 M10,40 L150,120 M10,120 L150,40" />
-    <circle cx="80" cy="80" r="50" fill="none" stroke="currentColor" strokeWidth="0.5" />
-    <circle cx="80" cy="80" r="75" fill="none" stroke="currentColor" strokeWidth="0.2" strokeDasharray="4 4" />
-  </motion.svg>
-);
+
 
 const FeatureBadge = ({ text, id, position = "right" }) => {
   const alignClass = position === "right"
@@ -38,8 +27,8 @@ const FeatureBadge = ({ text, id, position = "right" }) => {
 
 const AnimatedLine = () => (
   <svg className="absolute top-0 left-0 w-full h-[1px] overflow-visible" preserveAspectRatio="none">
-    <motion.line 
-      x1="0" y1="0" x2="100%" y2="0" 
+    <motion.line
+      x1="0" y1="0" x2="100%" y2="0"
       stroke="rgba(255,255,255,0.15)" strokeWidth="1"
       initial={{ pathLength: 0, opacity: 0 }}
       whileInView={{ pathLength: 1, opacity: 1 }}
@@ -56,11 +45,11 @@ const InstantIcon = () => (
       fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
       variants={{
         visible: { pathLength: 1, fill: "rgba(255,255,255,0)", scale: 1 },
-        hover: { 
-          pathLength: [1, 0, 1], 
-          fill: ["rgba(255,255,255,0)", "rgba(255,255,255,0.2)", "rgba(255,255,255,0)"], 
-          scale: 1.15, 
-          transition: { duration: 1.2, ease: "easeInOut" } 
+        hover: {
+          pathLength: [1, 0, 1],
+          fill: ["rgba(255,255,255,0)", "rgba(255,255,255,0.2)", "rgba(255,255,255,0)"],
+          scale: 1.15,
+          transition: { duration: 1.2, ease: "easeInOut" }
         }
       }}
     />
@@ -119,28 +108,17 @@ export default function Features() {
   };
 
   return (
-    <section id="features" className="relative bg-[#050505] pt-32 md:pt-48 pb-0 overflow-hidden w-full">
+    <section id="features" className="relative bg-[#050505] pt-0 pb-0 overflow-hidden w-full">
       <div className="w-full">
 
-        {/* Intro */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-32 md:mb-48 relative w-[80vw] mx-auto"
-        >
-          <SpinningStar />
-          <p className="text-theme-4/50 text-xl font-light tracking-wide uppercase mb-6 flex items-center gap-4">
-            <span className="w-8 h-[1px] bg-theme-4/50 block"></span>
-            The details
-          </p>
-          <h2 className="text-4xl md:text-5xl lg:text-7xl font-heading font-light text-white leading-[1.2] max-w-4xl">
-            Designed to disappear.
-            <br />
-            So the memories can take over.
+        {/* Features Title */}
+        <div className="w-[80vw] mx-auto pt-24 pb-20 md:pb-32 flex flex-col items-center text-center">
+          <h2 className="text-4xl md:text-5xl lg:text-7xl font-sans font-black text-white leading-tight tracking-tight max-w-4xl">
+            Everything you <span className="font-heading font-normal text-[#050505] [-webkit-text-stroke:1px_rgba(255,255,255,0.8)] md:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)]">need.</span> <br className="hidden md:block" />
+            <span className="font-heading font-normal text-[#050505] [-webkit-text-stroke:1px_rgba(255,255,255,0.8)] md:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)]">Nothing</span>{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-theme-4 to-white">you don't.</span>
           </h2>
-        </motion.div>
+        </div>
 
         <div className="flex flex-col gap-16 md:gap-32">
 
