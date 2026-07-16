@@ -3,12 +3,20 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { SyncProvider } from './contexts/SyncContext';
-import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import EventLive from './pages/EventLive';
-import Auth from './pages/Auth';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
+import CustomScrollbar from './components/CustomScrollbar';
+
+const Home = React.lazy(() => import('./pages/Home'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const EventLive = React.lazy(() => import('./pages/EventLive'));
+const Auth = React.lazy(() => import('./pages/Auth'));
+
+const LoadingFallback = () => (
+  <div className="flex h-screen w-full items-center justify-center bg-theme-1 text-theme-4">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-theme-4"></div>
+  </div>
+);
 
 function AppLayout() {
   const location = useLocation();
@@ -16,21 +24,24 @@ function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-theme-1 text-theme-4 font-sans">
+      <CustomScrollbar />
       {!isHome && <Sidebar />}
       <div className="flex-1 relative overflow-x-hidden">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/event/:eventId" element={<EventLive />} />
-        </Routes>
+        <React.Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/event/:eventId" element={<EventLive />} />
+          </Routes>
+        </React.Suspense>
       </div>
       <Toaster
         position="bottom-right"

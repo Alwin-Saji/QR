@@ -4,26 +4,34 @@ import { Camera, ArrowRight } from 'lucide-react';
 
 export default function Navigation({ user }) {
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = React.useRef(0);
 
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY < 50) {
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          
+          if (currentScrollY < 50) {
+            setIsVisible(true);
+          } else if (currentScrollY > lastScrollY.current) {
+            setIsVisible(false);
+          } else {
+            setIsVisible(true);
+          }
+          
+          lastScrollY.current = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
       }
-      
-      setLastScrollY(currentScrollY);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   return (
     <nav className={`fixed w-full z-50 top-6 md:top-8 left-0 flex justify-center pointer-events-none transition-transform duration-500 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-[150%]'}`}>
