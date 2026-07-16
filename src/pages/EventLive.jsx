@@ -6,7 +6,7 @@ import { uploadPhoto } from '../services/storage';
 import Gallery from '../components/Gallery';
 import CameraCapture from '../components/CameraCapture';
 import QRCodeDisplay from '../components/QRCodeDisplay';
-import { Loader2, QrCode, Share2, Upload, Clock, HelpCircle, Camera, Image as ImageIcon, Download, LayoutGrid, Play } from 'lucide-react';
+import { Loader2, QrCode, Share2, Upload, Clock, HelpCircle, Camera, Image as ImageIcon, Download, LayoutGrid, Play, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const getOrCreateGuestId = (eventId) => {
@@ -157,43 +157,43 @@ export default function EventLive() {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="w-full min-h-screen bg-gradient-to-br from-theme-1 via-theme-2/20 to-theme-1 animate-gradient text-theme-4 relative pb-32"
+      className="w-full min-h-screen bg-theme-4 text-[#050505] relative pb-32"
     >
-      <header className="sticky top-0 z-40 px-6 py-4 md:py-6 bg-theme-1/60 backdrop-blur-xl border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all shadow-sm">
+      <header className="sticky top-0 z-40 px-6 py-6 bg-theme-4/90 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
         <div className="flex flex-col gap-2 max-w-full overflow-hidden">
-          <h1 className="font-heading font-bold text-5xl text-theme-4 truncate">{eventData.name || 'Live Event'}</h1>
-          <p className="text-theme-4/90 italic font-medium text-sm sm:text-base">&quot;Capturing the fleeting moments, to cherish them forever.&quot;</p>
+          <h1 className="font-heading font-black tracking-tighter text-4xl sm:text-5xl truncate">{eventData.name || 'Live Event'}</h1>
+          <p className="text-[#050505]/60 font-light text-sm sm:text-base">Capturing the fleeting moments.</p>
           {eventData.auto_delete && (
-            <div className="flex items-center gap-2 text-sm text-theme-4/60 mt-1">
-              <Clock className="w-4 h-4 opacity-70" />
-              <span>Photos disappear 24 hours after upload</span>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#050505]/40 mt-1">
+              <Clock className="w-3 h-3" />
+              <span>Auto-delete: 24H</span>
             </div>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 sm:gap-3 justify-end">
+        <div className="flex flex-wrap gap-3 justify-end">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('start-slideshow'))}
-            className="flex items-center gap-2 px-4 py-2.5 bg-theme-3 hover:bg-theme-4 backdrop-blur-md text-theme-1 rounded-full font-bold transition-all shadow-lg"
+            className="flex items-center gap-2 px-5 py-2 bg-[#050505] hover:bg-[#050505]/80 text-white rounded-full font-bold text-sm transition-colors"
             aria-label="Play Slideshow"
           >
-            <Play className="w-5 h-5 fill-current" />
+            <Play className="w-4 h-4 fill-current" />
             <span className="hidden md:inline">Slideshow</span>
           </button>
           <button
             onClick={() => setShowHelp(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-md text-theme-4 border border-white/10 rounded-full hover:border-theme-4/50 font-bold transition-all shadow-lg"
+            className="flex items-center gap-2 px-5 py-2 bg-transparent hover:bg-[#050505]/5 text-[#050505] border border-[#050505]/20 rounded-full font-bold text-sm transition-colors"
             aria-label="How to use"
           >
-            <HelpCircle className="w-5 h-5" />
+            <HelpCircle className="w-4 h-4" />
             <span className="hidden sm:inline">Help</span>
           </button>
           <button
             onClick={() => setShowQR(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-md text-theme-4 border border-white/10 rounded-full hover:border-theme-4/50 font-bold transition-all shadow-lg"
+            className="flex items-center gap-2 px-5 py-2 bg-transparent hover:bg-[#050505]/5 text-[#050505] border border-[#050505]/20 rounded-full font-bold text-sm transition-colors"
             aria-label="Show QR Code"
           >
-            <QrCode className="w-5 h-5" />
+            <QrCode className="w-4 h-4" />
             <span className="hidden sm:inline">QR Code</span>
           </button>
           <button
@@ -215,10 +215,10 @@ export default function EventLive() {
                 }
               }
             }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-md text-theme-4 border border-white/10 rounded-full hover:border-theme-4/50 font-bold transition-all shadow-lg"
+            className="flex items-center gap-2 px-5 py-2 bg-transparent hover:bg-[#050505]/5 text-[#050505] border border-[#050505]/20 rounded-full font-bold text-sm transition-colors"
             aria-label="Share"
           >
-            <Share2 className="w-5 h-5" />
+            <Share2 className="w-4 h-4" />
             <span className="hidden sm:inline">Share</span>
           </button>
         </div>
@@ -236,66 +236,65 @@ export default function EventLive() {
       <CameraCapture eventId={eventId} guestId={guestId} isCreator={isCreator} />
 
       {showHelp && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={() => setShowHelp(false)}>
-          <div onClick={e => e.stopPropagation()} className="relative bg-theme-1/90 backdrop-blur-2xl p-8 rounded-[2rem] max-w-lg w-full shadow-2xl border border-white/10 text-center overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-theme-3/20 to-transparent pointer-events-none" />
-            
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowHelp(false)}>
+          <div onClick={e => e.stopPropagation()} className="relative bg-white p-10 rounded-[32px] max-w-lg w-full shadow-2xl text-center overflow-hidden">
+
             <button
               onClick={() => setShowHelp(false)}
-              className="absolute top-6 right-6 text-theme-4/60 hover:text-theme-4 transition-colors p-2 bg-white/5 rounded-full hover:bg-white/10 z-50 cursor-pointer"
+              className="absolute top-6 right-6 text-[#050505]/40 hover:text-[#050505] transition-colors p-2 rounded-full hover:bg-[#050505]/5 z-50 cursor-pointer"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <X className="w-6 h-6" />
             </button>
-            
-            <h2 className="font-heading text-4xl font-bold text-theme-4 mb-8 mt-2 relative z-10">Guide</h2>
-             
-            <div className="flex flex-col gap-6 text-left relative z-10 w-full max-w-sm mx-auto">
-              
-              <div className="flex items-start gap-4 group">
-                <div className="bg-theme-3/20 w-12 h-12 rounded-full flex items-center justify-center text-theme-4 shrink-0 shadow-lg border border-theme-3/30 group-hover:scale-110 transition-transform">
-                  <Camera className="w-6 h-6" />
+
+            <h2 className="font-heading text-4xl font-black tracking-tighter text-[#050505] mb-8 relative z-10">Guide</h2>
+
+            <div className="flex flex-col gap-8 text-left relative z-10 w-full max-w-sm mx-auto">
+
+              <div className="flex items-start gap-5 group">
+                <div className="w-12 h-12 rounded-full border border-[#050505]/10 flex items-center justify-center text-[#050505] shrink-0 group-hover:scale-110 group-hover:bg-[#050505]/5 transition-all">
+                  <Camera className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="font-bold text-theme-4 text-xl">Snap & Share</h3>
-                  <p className="text-theme-4/70 text-sm mt-1 leading-relaxed">Use the bottom dock to take pictures instantly or upload from your device.</p>
+                  <h3 className="font-bold text-[#050505] text-lg">Snap & Share</h3>
+                  <p className="text-[#050505]/60 text-sm mt-1 leading-relaxed">Use the bottom dock to take pictures instantly or upload from your device.</p>
                 </div>
               </div>
-              
-              <div className="flex items-start gap-4 group">
-                <div className="bg-theme-3/20 w-12 h-12 rounded-full flex items-center justify-center text-theme-4 shrink-0 shadow-lg border border-theme-3/30 group-hover:scale-110 transition-transform">
-                  <LayoutGrid className="w-6 h-6" />
+
+              <div className="flex items-start gap-5 group">
+                <div className="w-12 h-12 rounded-full border border-[#050505]/10 flex items-center justify-center text-[#050505] shrink-0 group-hover:scale-110 group-hover:bg-[#050505]/5 transition-all">
+                  <LayoutGrid className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="font-bold text-theme-4 text-xl">Drag & Drop</h3>
-                  <p className="text-theme-4/70 text-sm mt-1 leading-relaxed">On a computer, simply drag your photos anywhere on this screen.</p>
+                  <h3 className="font-bold text-[#050505] text-lg">Drag & Drop</h3>
+                  <p className="text-[#050505]/60 text-sm mt-1 leading-relaxed">On a computer, simply drag your photos anywhere on this screen.</p>
                 </div>
               </div>
-              
-              <div className="flex items-start gap-4 group">
-                <div className="bg-theme-3/20 w-12 h-12 rounded-full flex items-center justify-center text-theme-4 shrink-0 shadow-lg border border-theme-3/30 group-hover:scale-110 transition-transform">
-                  <Download className="w-6 h-6" />
+
+              <div className="flex items-start gap-5 group">
+                <div className="w-12 h-12 rounded-full border border-[#050505]/10 flex items-center justify-center text-[#050505] shrink-0 group-hover:scale-110 group-hover:bg-[#050505]/5 transition-all">
+                  <Download className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="font-bold text-theme-4 text-xl">Save Memories</h3>
-                  <p className="text-theme-4/70 text-sm mt-1 leading-relaxed">Hover over any photo to download it directly, or scan its QR code to save to your phone.</p>
+                  <h3 className="font-bold text-[#050505] text-lg">Save Memories</h3>
+                  <p className="text-[#050505]/60 text-sm mt-1 leading-relaxed">Hover over any photo to download it directly, or scan its QR code to save to your phone.</p>
                 </div>
               </div>
-              
-              <div className="flex items-start gap-4 group">
-                <div className="bg-theme-3/20 w-12 h-12 rounded-full flex items-center justify-center text-theme-4 shrink-0 shadow-lg border border-theme-3/30 group-hover:scale-110 transition-transform">
-                  <Share2 className="w-6 h-6" />
+
+              <div className="flex items-start gap-5 group">
+                <div className="w-12 h-12 rounded-full border border-[#050505]/10 flex items-center justify-center text-[#050505] shrink-0 group-hover:scale-110 group-hover:bg-[#050505]/5 transition-all">
+                  <Share2 className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="font-bold text-theme-4 text-xl">Invite Others</h3>
-                  <p className="text-theme-4/70 text-sm mt-1 leading-relaxed">Use the QR Code or Share button at the top to let others join.</p>
+                  <h3 className="font-bold text-[#050505] text-lg">Invite Others</h3>
+                  <p className="text-[#050505]/60 text-sm mt-1 leading-relaxed">Use the QR Code or Share button at the top to let others join.</p>
                 </div>
               </div>
-              
+
             </div>
-            
-            <button 
+
+            <button
               onClick={() => setShowHelp(false)}
-              className="mt-8 px-8 py-3 bg-theme-3 hover:bg-theme-4 text-theme-1 font-bold rounded-full transition-colors relative z-10 w-full sm:w-auto shadow-lg"
+              className="mt-10 px-8 py-3 bg-[#050505] hover:bg-[#050505]/80 text-white font-bold rounded-full transition-colors relative z-10 w-full sm:w-auto"
             >
               Got it!
             </button>
@@ -304,34 +303,34 @@ export default function EventLive() {
       )}
 
       {showQR && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
-          <div onClick={e => e.stopPropagation()} className="relative bg-theme-2 p-8 rounded-3xl max-w-sm w-full shadow-2xl border border-theme-3/20 text-center">
-             <button
-                onClick={() => setShowQR(false)}
-                className="absolute top-4 right-4 text-theme-4/50 hover:text-theme-4 font-bold transition-colors"
-             >
-                Close
-             </button>
-             <h2 className="font-heading text-3xl font-bold text-theme-4 mb-6">Scan to Join</h2>
-             <QRCodeDisplay url={eventUrl} title={eventData.name} />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
+          <div onClick={e => e.stopPropagation()} className="relative bg-white p-10 rounded-[32px] max-w-sm w-full shadow-2xl text-center">
+            <button
+              onClick={() => setShowQR(false)}
+              className="absolute top-6 right-6 text-[#050505]/40 hover:text-[#050505] transition-colors p-2 rounded-full hover:bg-[#050505]/5 z-50 cursor-pointer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="font-heading text-3xl font-black tracking-tighter text-[#050505] mb-8">Scan to Join</h2>
+            <QRCodeDisplay url={eventUrl} title={eventData.name} />
           </div>
         </div>
       )}
 
       {(isDragging || isUploadingDrag) && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-theme-1/80 backdrop-blur-sm border-4 border-dashed border-theme-3 pointer-events-none">
-          <div className="text-center p-8 bg-theme-2 rounded-3xl shadow-2xl border border-theme-3/20 max-w-md mx-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-theme-4/80 backdrop-blur-sm border-4 border-dashed border-[#050505]/20 pointer-events-none">
+          <div className="text-center p-10 bg-white rounded-[32px] shadow-2xl max-w-md mx-4">
             {isUploadingDrag ? (
               <>
-                <Loader2 className="w-16 h-16 animate-spin text-theme-3 mx-auto mb-4" />
-                <p className="text-2xl font-heading font-bold text-theme-4">Uploading photos...</p>
-                <p className="text-theme-4/60 mt-2">They will appear in the gallery shortly</p>
+                <Loader2 className="w-16 h-16 animate-spin text-[#050505] mx-auto mb-6" />
+                <p className="text-3xl font-heading font-black tracking-tighter text-[#050505]">Uploading photos...</p>
+                <p className="text-[#050505]/60 mt-2">They will appear in the gallery shortly</p>
               </>
             ) : (
               <>
-                <Upload className="w-16 h-16 text-theme-3 mx-auto mb-4" />
-                <p className="text-2xl font-heading font-bold text-theme-4">Drop images to upload</p>
-                <p className="text-theme-4/60 mt-2">Release to add them to the gallery</p>
+                <Upload className="w-16 h-16 text-[#050505] mx-auto mb-6" />
+                <p className="text-3xl font-heading font-black tracking-tighter text-[#050505]">Drop images to upload</p>
+                <p className="text-[#050505]/60 mt-2">Release to add them to the gallery</p>
               </>
             )}
           </div>

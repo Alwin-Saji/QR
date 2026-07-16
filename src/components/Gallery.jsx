@@ -4,7 +4,7 @@ import { supabase } from '../services/supabase';
 import { downloadPhoto } from '../services/storage';
 import { useSync } from '../contexts/SyncContext';
 import { QRCodeSVG } from 'qrcode.react';
-import { Download, QrCode, X, Trash2, CheckCircle2, Ban } from 'lucide-react';
+import { Download, QrCode, X, Trash2, CheckCircle2, Ban, Settings2 } from 'lucide-react';
 import PhotoLightbox from './PhotoLightbox';
 import LazyImage from './LazyImage';
 
@@ -413,12 +413,9 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
 
   if (photos.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-theme-4/80">
-        <div className="w-24 h-24 mb-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner backdrop-blur-md">
-          <QrCode className="w-10 h-10 opacity-50" />
-        </div>
-        <p className="text-3xl font-heading font-bold text-theme-4">No photos yet</p>
-        <p className="mt-2 text-theme-4/60">Be the first to capture a moment!</p>
+      <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-[#050505]/10 rounded-[32px] mx-4">
+        <QrCode className="w-12 h-12 opacity-20 mb-4" />
+        <p className="text-xl font-light text-[#050505]/50">No photos yet. Be the first!</p>
       </div>
     );
   }
@@ -426,15 +423,15 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
   return (
     <>
       {isCreator && (
-        <div className="flex justify-between items-center px-4 mb-4">
-          <p className="text-theme-4/60 text-sm font-bold">
+        <div className="flex justify-between items-center px-4 mb-8">
+          <p className="text-[#050505]/40 text-xs tracking-widest uppercase font-bold">
             {photos.length} Photo{photos.length !== 1 ? 's' : ''}
           </p>
-          <div className="flex gap-2">
-            <label className="flex items-center gap-3 px-4 py-2 bg-theme-2 hover:bg-theme-2/80 text-theme-4 border border-theme-3/20 rounded-full font-bold cursor-pointer transition-all shadow-sm group">
-              <span className="hidden sm:inline">Top Carousel</span>
-              <div className={`relative w-11 h-6 rounded-full transition-colors duration-300 ease-in-out ${showTopCarousel ? 'bg-theme-1 shadow-[0_0_8px_var(--theme-3-color,rgba(0,0,0,0.3))]' : 'bg-theme-4/20 group-hover:bg-theme-4/30'}`}>
-                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-transform duration-300 ease-in-out shadow-sm ${showTopCarousel ? 'translate-x-5' : 'translate-x-0'}`}></div>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <span className="hidden sm:inline text-sm font-medium text-[#050505]/60 group-hover:text-[#050505] transition-colors">Top Carousel</span>
+              <div className={`w-10 h-5 rounded-full flex items-center px-0.5 transition-colors duration-300 shadow-inner ${showTopCarousel ? 'bg-black' : 'bg-[#050505]/20'}`}>
+                <div className={`w-4 h-4 rounded-full bg-theme-4 shadow-sm transform transition-transform duration-300 ${showTopCarousel ? 'translate-x-5' : 'translate-x-0'}`}></div>
               </div>
               <input
                 type="checkbox"
@@ -447,7 +444,7 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
               <button
                 onClick={handleBulkDelete}
                 disabled={selectedIds.length === 0 || isDeleting}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full font-bold transition-all disabled:opacity-50"
+                className="flex items-center gap-2 text-red-500 hover:text-red-600 text-sm font-medium transition-colors disabled:opacity-50"
               >
                 {isDeleting ? "Deleting..." : <><Trash2 className="w-4 h-4" /> Delete ({selectedIds.length})</>}
               </button>
@@ -457,18 +454,27 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
                 setSelectionMode(!selectionMode);
                 setSelectedIds([]);
               }}
-              className="px-4 py-2 bg-theme-2 text-theme-4 border border-theme-3/20 hover:bg-theme-3/10 rounded-full font-bold transition-all shadow-sm"
+              className="flex items-center gap-2 text-[#050505]/60 hover:text-[#050505] text-sm font-medium transition-colors bg-white/50 hover:bg-white/80 px-3 py-1.5 rounded-full border border-[#050505]/10 backdrop-blur-sm"
             >
-              {selectionMode ? 'Cancel' : 'Manage Photos'}
+              {selectionMode ? (
+                <>
+                  <X className="w-4 h-4" /> Cancel
+                </>
+              ) : (
+                <>
+                  <Settings2 className="w-4 h-4" /> Manage Photos
+                </>
+              )}
             </button>
           </div>
         </div>
       )}
 
       {showTopCarousel && photos.length > 0 && (
-        <div className="w-full px-4 mb-10 fade-in">
-          <div className="relative w-full overflow-hidden rounded-[2rem] bg-theme-2/30 border border-theme-3/10 p-4 md:p-6 shadow-2xl backdrop-blur-sm">
-            <div className="relative flex items-center justify-center w-full h-[250px] sm:h-[450px] perspective-1000">
+        <div className="w-full px-4 mb-16 fade-in animate-in slide-in-from-bottom-8 duration-700">
+          <div className="relative w-full overflow-hidden rounded-[40px] bg-black/40 backdrop-blur-xl border border-theme-4/10 p-4 sm:p-6 shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-theme-3/5 to-transparent opacity-50 pointer-events-none"></div>
+            <div className="relative flex items-center justify-center w-full h-[300px] sm:h-[500px] perspective-1000">
               {photos.map((photo, i) => {
                 let diff = i - topCarouselIndex;
                 if (diff > photos.length / 2) diff -= photos.length;
@@ -499,23 +505,23 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
                 return (
                   <div
                     key={photo.id}
-                    className={`absolute w-[65%] sm:w-1/2 h-full rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.3)] border border-theme-3/20 transition-all duration-700 ease-out cursor-pointer group ${transformClass} ${blurClass}`}
+                    className={`absolute w-[65%] sm:w-1/2 h-full rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-theme-4/10 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer group ${transformClass} ${blurClass}`}
                     style={{ zIndex }}
                     onClick={() => {
                       if (isActive) setLightboxIndex(i);
                       else setTopCarouselIndex(i);
                     }}
                   >
-                    <img src={photo.url} className="w-full h-full object-cover" alt="Carousel item" />
+                    <img src={photo.url} className="w-full h-full object-cover bg-black/20" alt="Carousel item" />
 
-                    <div className={`absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity duration-500 ${isActive ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
-                      <div className="bg-white/20 backdrop-blur-md p-4 rounded-full text-white transform scale-90 group-hover:scale-100 transition-transform">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg>
+                    <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center transition-opacity duration-500 ${isActive ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+                      <div className="bg-theme-4/20 backdrop-blur-md p-4 rounded-full text-theme-4 shadow-xl border border-theme-4/30 transform scale-90 group-hover:scale-100 transition-all duration-300">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg>
                       </div>
                     </div>
 
-                    <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-6 pointer-events-none transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-                      <p className="text-white font-bold text-center text-lg drop-shadow-md">
+                    <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/50 to-transparent p-8 pointer-events-none transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                      <p className="text-theme-4 font-bold text-center text-sm md:text-base tracking-wide drop-shadow-md">
                         By {photo.uploaded_by?.trim() || photo.uploader_id?.trim() || 'Guest'}
                       </p>
                     </div>
@@ -578,32 +584,40 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
 
       {selectedPhotoForQR && (
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[80] flex items-center justify-center p-4"
           onClick={() => setSelectedPhotoForQR(null)}
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="relative bg-theme-2 p-8 rounded-3xl max-w-sm w-full shadow-2xl border border-theme-3/20 flex flex-col items-center text-center"
+            className="relative bg-black/40 backdrop-blur-2xl p-10 rounded-[2.5rem] max-w-sm w-full shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-theme-4/20 flex flex-col items-center text-center animate-in fade-in zoom-in duration-500 overflow-hidden group"
           >
+            <div className="absolute inset-0 bg-gradient-to-br from-theme-3/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
             <button
               onClick={() => setSelectedPhotoForQR(null)}
-              className="absolute top-4 right-4 text-theme-4/50 hover:text-theme-4 transition-colors"
+              className="absolute top-6 right-6 text-theme-4/50 hover:text-theme-4 bg-black/20 hover:bg-black/40 rounded-full p-2 transition-all duration-300 backdrop-blur-md"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
-            <h2 className="font-heading text-2xl font-bold text-theme-4 mb-2">Scan to Save</h2>
-            <p className="text-theme-4/60 text-sm mb-6">Scan this code to download the photo directly to your phone.</p>
+            <h2 className="font-heading text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-theme-3 to-theme-4 mb-2 drop-shadow-sm">Scan to Save</h2>
+            <p className="text-theme-4/60 text-sm mb-8 font-medium">Scan this code to download the photo directly to your phone.</p>
 
-            <div className="bg-white p-4 rounded-2xl shadow-inner mb-6">
-              <QRCodeSVG
-                value={`${selectedPhotoForQR.url}?download=${(eventName || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}_${(selectedPhotoForQR.created_at ? new Date(selectedPhotoForQR.created_at) : new Date()).toTimeString().split(' ')[0].replace(/:/g, '-')}.jpg`}
-                size={220}
-                level="L"
-              />
+            <div className="relative bg-gradient-to-br from-theme-3 to-theme-4 p-[3px] rounded-3xl shadow-2xl overflow-hidden group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] mb-8">
+              <div className="bg-[#0a0a0a] p-4 rounded-[22px]">
+                <div className="bg-white p-3 rounded-2xl shadow-inner">
+                  <QRCodeSVG
+                    value={`${selectedPhotoForQR.url}?download=${(eventName || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}_${(selectedPhotoForQR.created_at ? new Date(selectedPhotoForQR.created_at) : new Date()).toTimeString().split(' ')[0].replace(/:/g, '-')}.jpg`}
+                    size={200}
+                    level="L"
+                    bgColor="transparent"
+                    fgColor="#0a0a0a"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-theme-3/20 shadow-sm mt-2">
+            <div className="w-28 h-28 rounded-2xl overflow-hidden border border-theme-4/20 shadow-xl mt-2 relative group-hover:-translate-y-2 transition-transform duration-500">
               <LazyImage src={selectedPhotoForQR.url} alt="Preview" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/20 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] pointer-events-none"></div>
             </div>
           </div>
         </div>
@@ -650,8 +664,8 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
                 type="button"
                 onClick={() => setRemoveRestrictedPhotos((value) => !value)}
                 className={`w-full rounded-xl border px-4 py-3 text-left transition-all ${removeRestrictedPhotos
-                    ? 'border-red-200/40 bg-red-500/15 text-red-50'
-                    : 'border-theme-3/25 bg-theme-1/35 text-theme-4 hover:bg-theme-1/50'
+                  ? 'border-red-200/40 bg-red-500/15 text-red-50'
+                  : 'border-theme-3/25 bg-theme-1/35 text-theme-4 hover:bg-theme-1/50'
                   }`}
               >
                 <span className="flex items-center gap-3">
@@ -747,7 +761,7 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
 
   return (
     <div
-      className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group animate-fade-in-up [content-visibility:auto]"
+      className="relative aspect-[4/5] rounded-2xl overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer group animate-fade-in-up [content-visibility:auto]"
       onMouseEnter={() => setShowOverlay(true)}
       onMouseLeave={() => setShowOverlay(false)}
       onClick={() => {
@@ -774,17 +788,16 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
       </div>
 
       <div
-        className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 flex items-center justify-center gap-4 ${showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute inset-0 bg-black/10 backdrop-blur-sm transition-opacity duration-300 flex items-center justify-center gap-4 ${showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       >
         <button
           onClick={(e) => onDownload(e, photo.url, downloadName)}
-          className="flex flex-col items-center justify-center text-white hover:text-theme-3 transition-colors"
+          className="flex flex-col items-center justify-center text-[#050505] hover:scale-110 transition-transform"
           title="Download Directly"
         >
-          <div className="bg-white/20 p-3 rounded-full backdrop-blur-md mb-2 hover:bg-white/30 transition-colors">
-            <Download className="w-6 h-6" />
+          <div className="bg-white p-3 rounded-full shadow-lg mb-2 hover:bg-gray-100 transition-colors">
+            <Download className="w-5 h-5" />
           </div>
-          <span className="text-xs font-bold shadow-black drop-shadow-md">Save</span>
         </button>
 
         <button
@@ -792,14 +805,26 @@ function PhotoCard({ photo, eventName, onShowQR, onOpenLightbox, selectionMode, 
             e.stopPropagation();
             onShowQR();
           }}
-          className="flex flex-col items-center justify-center text-white hover:text-theme-3 transition-colors"
+          className="flex flex-col items-center justify-center text-[#050505] hover:scale-110 transition-transform"
           title="Show QR Code"
         >
-          <div className="bg-white/20 p-3 rounded-full backdrop-blur-md mb-2 hover:bg-white/30 transition-colors">
-            <QrCode className="w-6 h-6" />
+          <div className="bg-white p-3 rounded-full shadow-lg mb-2 hover:bg-gray-100 transition-colors">
+            <QrCode className="w-5 h-5" />
           </div>
-          <span className="text-xs font-bold shadow-black drop-shadow-md">Scan QR</span>
         </button>
+
+        {(isCreator || isCurrentUploader) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onGuestDelete();
+            }}
+            className="absolute top-3 right-3 bg-white hover:bg-red-50 text-red-500 p-2 rounded-full shadow-lg transition-colors"
+            title="Delete Photo"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
 
         {isCreator && !isCurrentUploader && (
           <button

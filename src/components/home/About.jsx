@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Ghost, EyeOff, Clock } from 'lucide-react';
 
 const AnimatedLine = () => (
   <svg className="absolute top-0 left-0 w-full h-[1px] overflow-visible" preserveAspectRatio="none">
@@ -16,22 +17,40 @@ const AnimatedLine = () => (
 
 export default function About() {
   return (
-    <section id="about" className="relative bg-[#050505] w-full flex flex-col pt-16 pb-0 overflow-hidden">
+    <section id="about" className="relative bg-[#050505] w-full flex flex-col pt-16 pb-16 md:pb-24 overflow-hidden">
       <AnimatedLine />
       
-      <div className="w-[80vw] mx-auto pt-24 md:pt-32 pb-16 flex flex-col justify-center">
-        <div className="max-w-2xl">
-          <p className="text-theme-4/50 text-xl font-light tracking-wide mb-6 flex items-center gap-4">
-            <span className="w-8 h-[1px] bg-theme-4/50 block"></span>
-            Core Philosophy
-          </p>
-          <h3 className="text-2xl md:text-3xl font-light text-white leading-relaxed mb-6">
-            We believe technology should be invisible.
+      <div className="w-[85vw] max-w-7xl mx-auto pt-32 md:pt-40 pb-32 relative z-20 flex items-start justify-between">
+        
+        {/* Main Content Paragraph */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="flex-1 pr-8 md:pr-24"
+        >
+          <h3 className="text-3xl md:text-4xl lg:text-6xl font-light text-white leading-[1.5] md:leading-[1.4] max-w-5xl tracking-tight">
+            Mementos is a real-time, <span className="text-transparent tracking-wide [-webkit-text-stroke:0.5px_#f5eedc]">ephemeral</span> photo-sharing space built for the present. no <span className="text-transparent [-webkit-text-stroke:0.5px_#f5eedc]">algorithms</span>, no permanent feeds, no <span className="text-transparent [-webkit-text-stroke:0.5px_#f5eedc]">vanity metrics</span>. just a pure connection where photos <span className="text-transparent [-webkit-text-stroke:0.5px_#f5eedc]">vanish</span> when the moment ends, leaving only the memory behind.
           </h3>
-          <p className="text-theme-4/60 text-base md:text-lg font-light leading-relaxed">
-            Mementos is a real-time, ephemeral photo-sharing space built for the present. No algorithms, no permanent feeds, no vanity metrics. Just a pure, unadulterated connection where photos vanish when the moment ends, leaving only the memory behind.
-          </p>
-        </div>
+        </motion.div>
+
+        {/* Vertical Title on Right Edge */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, delay: 0.3 }}
+          className="hidden md:flex flex-col items-center justify-center border-l border-theme-4/10 pl-8 lg:pl-16"
+        >
+          <div 
+            className="text-[#f5eedc]/80 text-6xl md:text-8xl lg:text-[8rem] font-heading font-black tracking-wide whitespace-nowrap"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
+            about
+          </div>
+        </motion.div>
+
       </div>
       
       {/* Massive Ticker Banner */}
@@ -43,7 +62,7 @@ export default function About() {
         >
           {[...Array(6)].map((_, i) => (
             <div key={i} className="flex items-center gap-8 md:gap-12">
-              <h2 className="text-5xl md:text-7xl lg:text-8xl font-heading font-bold tracking-tighter">
+              <h2 className="text-5xl md:text-7xl lg:text-8xl font-heading font-bold tracking-tighter leading-tight pb-2 md:pb-4 pt-1">
                 Designed to disappear
               </h2>
               <div className="w-4 h-4 md:w-6 md:h-6 rounded-full bg-[#050505]" />
