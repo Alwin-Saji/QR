@@ -310,8 +310,8 @@ export default function Hero({ user, setIsQRModalOpen }) {
 
                   {/* The text (Before Hover - Dark Background, Theme Text) */}
                   <div className="absolute right-0 top-0 bottom-0 w-full overflow-hidden group-hover:w-0 transition-all duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] z-10 pointer-events-none flex justify-end">
-                    <div className="w-[260px] h-full flex items-center justify-center text-[11px] font-bold tracking-[0.35em] uppercase text-theme-4/70 shrink-0">
-                      Slide To Roll
+                    <div className="w-[260px] h-full flex items-center justify-center pl-2 text-[11px] font-bold tracking-[0.35em] uppercase text-theme-4/70 shrink-0">
+                      Make Your Roll
                     </div>
                   </div>
 
