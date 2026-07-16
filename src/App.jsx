@@ -21,13 +21,13 @@ function AppLayout() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
-            } 
+            }
           />
           <Route path="/event/:eventId" element={<EventLive />} />
         </Routes>

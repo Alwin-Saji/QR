@@ -13,7 +13,7 @@ import Navigation from './Navigation';
 export default function Hero({ user, setIsQRModalOpen }) {
   const [isPlaying, setIsPlaying] = React.useState(true);
   const [centeredItemIndex, setCenteredItemIndex] = React.useState(null);
-  
+
   const marqueeTl = React.useRef(null);
   const heroRef = React.useRef(null);
   const textContainerRef = React.useRef(null);
@@ -150,7 +150,7 @@ export default function Hero({ user, setIsQRModalOpen }) {
 
       {/* Main Page Content (Hidden Initially) */}
       <div ref={mainContentRef} className="opacity-0">
-        
+
         <Navigation user={user} />
 
         <main className="w-full h-[100vh] min-h-[600px] overflow-hidden bg-[#0a0a0a] flex flex-col relative">
@@ -226,7 +226,7 @@ export default function Hero({ user, setIsQRModalOpen }) {
                   <div className="flex items-center gap-4 md:gap-8 pr-4 md:pr-8">
                     {[img3, img1, img1, img4, img2].map((src, idx) => (
                       <div key={`fg-1-${idx}`} data-idx={idx % 5} className={`fg-item isolate h-[25vh] md:h-[30vh] min-h-[180px] aspect-[16/9] bg-[#050505] p-2 flex-shrink-0 relative group shadow-2xl border border-white/5 transition-all duration-700 ${isPlaying
-                        ? 'scale-[1.05] z-20 opacity-100' 
+                        ? 'scale-[1.05] z-20 opacity-100'
                         : ((centeredItemIndex === (idx % 5)) ? 'scale-[1.15] z-20 opacity-100' : 'hover:scale-[1.05] hover:z-20')
                         }`}>
                         <img src={src} className={`w-full h-full object-cover transition-all duration-700 ${isPlaying
