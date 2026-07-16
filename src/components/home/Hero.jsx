@@ -20,25 +20,27 @@ export default function Hero({ user, setIsQRModalOpen }) {
   const bgTrackRef = React.useRef(null);
   const placardRef = React.useRef(null);
   const apertureHoleRef = React.useRef(null);
+  const apertureOutlineRef = React.useRef(null);
+  const irisContainerRef = React.useRef(null);
   const mainContentRef = React.useRef(null);
 
   React.useEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline();
 
-      gsap.set(apertureHoleRef.current, { width: "0vmax", height: "0vmax" });
+      gsap.set([apertureHoleRef.current, apertureOutlineRef.current], { scale: 0, rotation: -45, transformOrigin: "center center" });
       gsap.set(mainContentRef.current, { opacity: 1 });
 
       // 2. Cinematic Iris Opens
-      tl.to(apertureHoleRef.current, {
-        width: "250vmax",
-        height: "250vmax",
+      tl.to([apertureHoleRef.current, apertureOutlineRef.current], {
+        scale: 250, // Massive enough to clear the screen
+        rotation: 90, // Rotating camera aperture feel
         duration: 1.8,
         ease: "power3.inOut",
         delay: 0.2
       })
-        // Hide container after animation
-        .set(apertureHoleRef.current, { display: 'none' })
+        // Hide entire container after animation so it doesn't block the screen
+        .set(irisContainerRef.current, { display: 'none' })
 
         // 3. Normal elements animate in
         .fromTo(textContainerRef.current.children,
@@ -139,14 +141,38 @@ export default function Hero({ user, setIsQRModalOpen }) {
 
   return (
     <div ref={heroRef} className="w-full h-full relative">
-      {/* Flawless Cinematic Iris Wipe */}
-      <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none overflow-hidden">
-        <div
-          ref={apertureHoleRef}
-          className="rounded-full bg-transparent"
-          style={{ boxShadow: "0 0 0 150vmax var(--color-theme-1)" }}
-        />
-      </div>
+      {/* Flawless Cinematic Iris Wipe (Precise Octagonal Aperture) */}
+      <svg ref={irisContainerRef} className="fixed inset-0 z-[100] pointer-events-none" style={{ width: '100%', height: '100%' }}>
+        <defs>
+          <mask id="iris-mask">
+            <rect width="100%" height="100%" fill="white" />
+            <svg x="50%" y="50%" overflow="visible">
+              <polygon 
+                ref={apertureHoleRef}
+                points="0,-10 7.07,-7.07 10,0 7.07,7.07 0,10 -7.07,7.07 -10,0 -7.07,-7.07" 
+                fill="black" 
+                style={{ transform: "scale(0)", transformOrigin: "center center" }}
+              />
+            </svg>
+          </mask>
+        </defs>
+        
+        {/* The solid cream overlay */}
+        <rect width="100%" height="100%" fill="var(--theme-color-4)" mask="url(#iris-mask)" />
+        
+        {/* The Black Stroke Outline that frames the hole */}
+        <svg x="50%" y="50%" overflow="visible">
+          <polygon 
+            ref={apertureOutlineRef}
+            points="0,-10 7.07,-7.07 10,0 7.07,7.07 0,10 -7.07,7.07 -10,0 -7.07,-7.07" 
+            fill="none"
+            stroke="#050505"
+            strokeWidth="3"
+            vectorEffect="non-scaling-stroke"
+            style={{ transform: "scale(0)", transformOrigin: "center center" }}
+          />
+        </svg>
+      </svg>
 
       {/* Main Page Content (Hidden Initially) */}
       <div ref={mainContentRef} className="opacity-0">

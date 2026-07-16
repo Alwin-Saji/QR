@@ -7,7 +7,8 @@ import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import CustomScrollbar from './components/CustomScrollbar';
 
-const Home = React.lazy(() => import('./pages/Home'));
+import Home from './pages/Home';
+
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const EventLive = React.lazy(() => import('./pages/EventLive'));
 const Auth = React.lazy(() => import('./pages/Auth'));
