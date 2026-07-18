@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      if (event === 'PASSWORD_RECOVERY') {
+      if (event === 'PASSWORD_RECOVERY' && !window.location.pathname.includes('/reset-password')) {
         window.location.href = '/reset-password';
       }
     });

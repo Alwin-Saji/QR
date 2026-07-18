@@ -2,22 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  // Supabase automatically picks up the access_token from the URL hash
-  // and establishes a session. We just need to check if we have a session.
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        toast.error('Invalid or expired reset link. Please request a new one.');
-        navigate('/auth');
-      }
-    });
-  }, [navigate]);
+  const { user, loading: authLoading } = useAuth();
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
@@ -52,15 +45,24 @@ export default function ResetPassword() {
         <form onSubmit={handleUpdatePassword} className="space-y-6">
           <div>
             <label className="block text-[#050505]/80 mb-2 text-sm font-bold tracking-wide">New Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white/40 border border-[#050505]/20 text-[#050505] placeholder:text-[#050505]/30 rounded-2xl px-5 py-4 focus:ring-0 focus:border-[#050505] outline-none transition-all font-light"
-              placeholder="••••••••"
-              required
-              minLength={6}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-white/40 border border-[#050505]/20 text-[#050505] placeholder:text-[#050505]/30 rounded-2xl px-5 py-4 pr-12 focus:ring-0 focus:border-[#050505] outline-none transition-all font-light"
+                placeholder="••••••••"
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#050505]/40 hover:text-[#050505]/80 transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button
