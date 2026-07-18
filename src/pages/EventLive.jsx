@@ -63,17 +63,17 @@ export default function EventLive() {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full bg-theme-1 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-theme-3"></div>
+      <div className="min-h-screen w-full bg-theme-4 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#050505]"></div>
       </div>
     );
   }
 
   if (!eventData) {
     return (
-      <div className="min-h-screen w-full bg-theme-1 flex flex-col justify-center items-center text-center p-4">
-        <h1 className="text-5xl font-heading font-bold text-theme-4 mb-2">Event Not Found</h1>
-        <p className="text-theme-4/80">The event you are looking for does not exist or has expired.</p>
+      <div className="min-h-screen w-full bg-theme-4 flex flex-col justify-center items-center text-center p-4 text-[#050505]">
+        <h1 className="text-5xl md:text-6xl font-heading font-black tracking-tighter mb-4">Event Not Found</h1>
+        <p className="text-[#050505]/60 font-light">The event you are looking for does not exist or has expired.</p>
       </div>
     );
   }

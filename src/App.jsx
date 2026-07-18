@@ -12,6 +12,7 @@ import Home from './pages/Home';
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const EventLive = React.lazy(() => import('./pages/EventLive'));
 const Auth = React.lazy(() => import('./pages/Auth'));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 
 const LoadingFallback = () => (
   <div className="flex h-screen w-full items-center justify-center bg-theme-1 text-theme-4">
@@ -32,6 +33,7 @@ function AppLayout() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/dashboard"
               element={
