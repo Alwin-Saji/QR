@@ -407,12 +407,12 @@ export default function Hero({ user, setIsQRModalOpen }) {
                   ref={ctaRef}
                   draggable={false}
                   onClick={() => {
-                    if (isTouchRef.current) return; // Require swipe on touch devices
+                    if (isTouchRef.current) return;
                     if (!isDragging && progress === 1) navigate('/dashboard');
                   }}
                   onMouseDown={handleDragStart}
                   onTouchStart={handleDragStart}
-                  className={`relative flex items-center bg-black/60 text-theme-4 backdrop-blur-md border border-theme-4/30 p-2 rounded-full overflow-hidden shadow-2xl w-[190px] md:w-[260px] h-12 md:h-14 ${progress > 0 ? 'border-theme-4/60 bg-black/90' : ''}`}
+                  className={`relative flex items-center bg-black/60 text-theme-4 backdrop-blur-md border border-theme-4/30 p-2 rounded-full overflow-hidden shadow-2xl w-[190px] md:w-[260px] h-12 md:h-14 [--pad:8px] md:[--pad:16px] ${progress > 0 ? 'border-theme-4/60 bg-black/90' : ''}`}
                   style={{ transition: isDragging ? 'none' : 'all 0.5s cubic-bezier(0.22,1,0.36,1)' }}
                 >
 
@@ -420,7 +420,7 @@ export default function Hero({ user, setIsQRModalOpen }) {
                   <div 
                     className="absolute left-1 md:left-2 top-1 md:top-2 bottom-1 md:bottom-2 bg-theme-4 rounded-full z-0 opacity-100 pointer-events-none"
                     style={{ 
-                      width: `calc(40px + ${progress} * (100% - 48px))`,
+                      width: `calc(40px + ${progress} * (100% - 40px - var(--pad)))`,
                       transition: isDragging ? 'none' : 'all 0.5s cubic-bezier(0.22,1,0.36,1)'
                     }}
                   ></div>
@@ -429,7 +429,7 @@ export default function Hero({ user, setIsQRModalOpen }) {
                   <div 
                     className={`w-10 h-10 rounded-full flex items-center justify-center z-20 absolute border border-black/10 pointer-events-none ${progress > 0.5 ? 'bg-black text-theme-4' : 'bg-theme-4 text-black'}`}
                     style={{ 
-                      left: `calc(${progress} * (100% - 56px) + 4px)`,
+                      left: `calc((var(--pad) / 2) + ${progress} * (100% - 40px - var(--pad)))`,
                       transform: `rotate(${progress * 1080}deg)`,
                       transition: isDragging ? 'none' : 'all 0.5s cubic-bezier(0.22,1,0.36,1)'
                     }}
