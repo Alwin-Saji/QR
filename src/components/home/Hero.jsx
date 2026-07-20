@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Film, QrCode } from 'lucide-react';
 import { FaGithub } from 'react-icons/fa';
 import gsap from 'gsap';
@@ -13,6 +13,81 @@ import Navigation from './Navigation';
 export default function Hero({ user, setIsQRModalOpen }) {
   const [isPlaying, setIsPlaying] = React.useState(true);
   const [centeredItemIndex, setCenteredItemIndex] = React.useState(null);
+
+  const [swipeProgress, setSwipeProgress] = React.useState(0);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
+  
+  const navigate = useNavigate();
+  const ctaRef = React.useRef(null);
+
+  const progress = isDragging ? swipeProgress : (isHovered ? 1 : 0);
+
+  const dragStartX = React.useRef(0);
+  const dragStartProgress = React.useRef(0);
+  const isTouchRef = React.useRef(false);
+
+  const handleDragStart = (e) => {
+    if (e.button && e.button !== 0) return;
+    
+    const isTouch = e.type.includes('touch');
+    if (isTouch) {
+      isTouchRef.current = true;
+      setIsHovered(false); // Force disable hover on touch
+    }
+    
+    const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+    
+    setIsDragging(true);
+    dragStartX.current = clientX;
+    dragStartProgress.current = swipeProgress;
+
+    const handleMove = (moveEvent) => {
+      if (!ctaRef.current) return;
+      
+      const currentClientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const rect = ctaRef.current.getBoundingClientRect();
+      const maxTravel = rect.width - 56;
+      
+      const deltaX = currentClientX - dragStartX.current;
+      let newProgress = dragStartProgress.current + (deltaX / maxTravel);
+      
+      if (newProgress < 0) newProgress = 0;
+      if (newProgress > 1) newProgress = 1;
+      
+      setSwipeProgress(newProgress);
+      
+      if (newProgress === 1) {
+        setIsDragging(false);
+        setSwipeProgress(1);
+        setTimeout(() => navigate('/dashboard'), 300);
+        cleanup();
+      }
+    };
+
+    const handleEnd = () => {
+      setIsDragging(false);
+      setSwipeProgress(prev => {
+        if (prev < 1) return 0;
+        return prev;
+      });
+      cleanup();
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener('touchcancel', handleEnd);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('touchcancel', handleEnd);
+  };
 
   const marqueeTl = React.useRef(null);
   const heroRef = React.useRef(null);
@@ -147,24 +222,24 @@ export default function Hero({ user, setIsQRModalOpen }) {
           <mask id="iris-mask">
             <rect width="100%" height="100%" fill="white" />
             <svg x="50%" y="50%" overflow="visible">
-              <polygon 
+              <polygon
                 ref={apertureHoleRef}
-                points="0,-10 7.07,-7.07 10,0 7.07,7.07 0,10 -7.07,7.07 -10,0 -7.07,-7.07" 
-                fill="black" 
+                points="0,-10 7.07,-7.07 10,0 7.07,7.07 0,10 -7.07,7.07 -10,0 -7.07,-7.07"
+                fill="black"
                 style={{ transform: "scale(0)", transformOrigin: "center center" }}
               />
             </svg>
           </mask>
         </defs>
-        
+
         {/* The solid cream overlay */}
         <rect width="100%" height="100%" fill="var(--theme-color-4)" mask="url(#iris-mask)" />
-        
+
         {/* The Black Stroke Outline that frames the hole */}
         <svg x="50%" y="50%" overflow="visible">
-          <polygon 
+          <polygon
             ref={apertureOutlineRef}
-            points="0,-10 7.07,-7.07 10,0 7.07,7.07 0,10 -7.07,7.07 -10,0 -7.07,-7.07" 
+            points="0,-10 7.07,-7.07 10,0 7.07,7.07 0,10 -7.07,7.07 -10,0 -7.07,-7.07"
             fill="none"
             stroke="#050505"
             strokeWidth="3"
@@ -179,7 +254,7 @@ export default function Hero({ user, setIsQRModalOpen }) {
 
         <Navigation user={user} />
 
-        <main className="w-full h-[100vh] min-h-[600px] overflow-hidden bg-[#0a0a0a] flex flex-col relative">
+        <main className="w-full h-[100svh] md:h-screen min-h-[600px] overflow-hidden bg-[#0a0a0a] flex flex-col relative">
 
           {/* Subtle Grain */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.4] mix-blend-screen z-0 transform-gpu will-change-transform">
@@ -193,18 +268,18 @@ export default function Hero({ user, setIsQRModalOpen }) {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[50vh] bg-theme-1/20 blur-[120px] rounded-full pointer-events-none z-0 transform-gpu will-change-transform"></div>
 
           {/* OVERLAY SECTION: Typography (Mix Blend Mode) */}
-          <div ref={textContainerRef} className="absolute inset-0 flex flex-col justify-center items-center text-center z-30 px-4 pointer-events-none mix-blend-difference text-white">
-            <h1 className="mt-8 text-[7rem] md:text-[14rem] lg:text-[22rem] font-heading font-normal leading-[0.6] transition-all duration-700">
+          <div ref={textContainerRef} className="absolute inset-0 flex flex-col justify-start md:justify-center pt-[15vh] md:pt-0 items-center text-center z-30 px-4 pointer-events-none mix-blend-difference text-white">
+            <h1 className="mt-0 md:mt-8 text-7xl md:text-[10rem] lg:text-[18rem] font-heading font-normal leading-[0.8] md:leading-[0.6] transition-all duration-700 pt-8 md:pt-0">
               Mementos
             </h1>
-            <div className="mt-8 flex flex-col items-center gap-3">
-              <p className="text-[10px] md:text-lg font-sans font-light italic max-w-md leading-relaxed tracking-wider">
-                " You don't take a <span className='font-heading text-3xl'>photograph</span>, you make it. "
+            <div className="mt-4 md:mt-8 flex flex-col items-center gap-3">
+              <p className="text-xs md:text-lg font-sans font-light italic max-w-md leading-relaxed tracking-wider">
+                " You don't take a <span className='font-heading text-2xl md:text-3xl'>photograph</span>, you make it. "
               </p>
             </div>
 
             {/* Left Meta Info (Circular Corner Text via Mix Blend) */}
-            <div className="hidden md:block absolute -left-[200px] -bottom-[200px] w-[400px] h-[400px] pointer-events-none opacity-90">
+            <div className="absolute -left-[100px] -bottom-[100px] md:-left-[200px] md:-bottom-[200px] w-[200px] md:w-[400px] h-[200px] md:h-[400px] pointer-events-none opacity-90">
               <svg viewBox="0 0 200 200" className="w-full h-full animate-[spin_35s_linear_infinite] overflow-visible">
                 {/* Circle path for text (radius = 90, center = 100,100) */}
                 <path id="cornerTextPath" d="M 100, 100 m -90, 0 a 90,90 0 1,1 180,0 a 90,90 0 1,1 -180,0" fill="none" />
@@ -218,24 +293,24 @@ export default function Hero({ user, setIsQRModalOpen }) {
           </div>
 
           {/* MIDDLE SECTION: Edge-to-Edge Endless Film Reel */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 w-full z-10 flex flex-col pt-16 md:pt-20 justify-center">
+          <div className="absolute top-[55%] md:top-1/2 -translate-y-1/2 left-0 right-0 w-full z-10 flex flex-col pt-0 md:pt-20 justify-center">
 
             {/* BACKGROUND Track (Reverse / Blurred) */}
             <div className="absolute top-[60%] -translate-y-1/2 w-full z-0 pointer-events-none rotate-[10deg] scale-110 transform-gpu">
-              <div className="border-y border-theme-4/5 bg-black/20 opacity-70 blur-[3px] py-8 overflow-hidden transform-gpu">
+              <div className="border-y border-theme-4/5 bg-black/20 opacity-70 blur-[3px] py-4 md:py-8 overflow-hidden transform-gpu">
                 <div ref={bgTrackRef} className="flex w-max will-change-transform transform-gpu">
                   {/* Block 1 */}
-                  <div className="flex items-center gap-4 md:gap-8 pr-4 md:pr-8">
+                  <div className="flex items-center gap-3 md:gap-8 pr-3 md:pr-8">
                     {[img1, img2, img3, img1, img3].reverse().map((src, idx) => (
-                      <div key={`bg-1-${idx}`} className="h-[25vh] md:h-[30vh] min-h-[180px] aspect-[16/9] bg-[#050505] p-2 flex-shrink-0 relative border border-white/5">
+                      <div key={`bg-1-${idx}`} className="h-[14vh] md:h-[30vh] min-h-[100px] md:min-h-[180px] aspect-[16/9] bg-[#050505] p-1 md:p-2 flex-shrink-0 relative border border-white/5">
                         <img src={src} className={`w-full h-full object-cover transition-all duration-700 ${isPlaying ? 'sepia-0 grayscale-0 contrast-100' : 'sepia-[0.3] grayscale-[0.4] contrast-125'}`} alt={`Bg Film frame ${idx}`} />
                       </div>
                     ))}
                   </div>
                   {/* Block 2 */}
-                  <div className="flex items-center gap-4 md:gap-8 pr-4 md:pr-8">
+                  <div className="flex items-center gap-3 md:gap-8 pr-3 md:pr-8">
                     {[img1, img2, img3, img1, img3].reverse().map((src, idx) => (
-                      <div key={`bg-2-${idx}`} className="h-[25vh] md:h-[30vh] min-h-[180px] aspect-[16/9] bg-[#050505] p-2 flex-shrink-0 relative border border-white/5">
+                      <div key={`bg-2-${idx}`} className="h-[14vh] md:h-[30vh] min-h-[100px] md:min-h-[180px] aspect-[16/9] bg-[#050505] p-1 md:p-2 flex-shrink-0 relative border border-white/5">
                         <img src={src} className={`w-full h-full object-cover transition-all duration-700 ${isPlaying ? 'sepia-0 grayscale-0 contrast-100' : 'sepia-[0.3] grayscale-[0.4] contrast-125'}`} alt={`Bg Film frame ${idx}`} />
                       </div>
                     ))}
@@ -246,12 +321,12 @@ export default function Hero({ user, setIsQRModalOpen }) {
 
             {/* FOREGROUND The Reel Track */}
             <div className="relative z-10 w-full -rotate-[5deg] transform-gpu">
-              <div className="border-y border-theme-4/10 bg-black/80 shadow-[0_0_50px_rgba(0,0,0,0.9)] py-8 overflow-hidden transform-gpu">
+              <div className="border-y border-theme-4/10 bg-black/80 shadow-[0_0_50px_rgba(0,0,0,0.9)] py-4 md:py-8 overflow-hidden transform-gpu">
                 <div ref={placardRef} className="flex w-max will-change-transform transform-gpu">
                   {/* Block 1 */}
-                  <div className="flex items-center gap-4 md:gap-8 pr-4 md:pr-8">
+                  <div className="flex items-center gap-3 md:gap-8 pr-3 md:pr-8">
                     {[img3, img1, img1, img4, img2].map((src, idx) => (
-                      <div key={`fg-1-${idx}`} data-idx={idx % 5} className={`fg-item isolate h-[25vh] md:h-[30vh] min-h-[180px] aspect-[16/9] bg-[#050505] p-2 flex-shrink-0 relative group shadow-2xl border border-white/5 transition-all duration-700 ${isPlaying
+                      <div key={`fg-1-${idx}`} data-idx={idx % 5} className={`fg-item isolate h-[14vh] md:h-[30vh] min-h-[100px] md:min-h-[180px] aspect-[16/9] bg-[#050505] p-1 md:p-2 flex-shrink-0 relative group shadow-2xl border border-white/5 transition-all duration-700 ${isPlaying
                         ? 'scale-[1.05] z-20 opacity-100'
                         : ((centeredItemIndex === (idx % 5)) ? 'scale-[1.15] z-20 opacity-100' : 'hover:scale-[1.05] hover:z-20')
                         }`}>
@@ -264,9 +339,9 @@ export default function Hero({ user, setIsQRModalOpen }) {
                     ))}
                   </div>
                   {/* Block 2 */}
-                  <div className="flex items-center gap-4 md:gap-8 pr-4 md:pr-8">
+                  <div className="flex items-center gap-3 md:gap-8 pr-3 md:pr-8">
                     {[img3, img1, img1, img4, img2].map((src, idx) => (
-                      <div key={`fg-2-${idx}`} data-idx={idx % 5} className={`fg-item isolate h-[25vh] md:h-[30vh] min-h-[180px] aspect-[16/9] bg-[#050505] p-2 flex-shrink-0 relative group shadow-2xl border border-white/5 transition-all duration-700 ${isPlaying
+                      <div key={`fg-2-${idx}`} data-idx={idx % 5} className={`fg-item isolate h-[14vh] md:h-[30vh] min-h-[100px] md:min-h-[180px] aspect-[16/9] bg-[#050505] p-1 md:p-2 flex-shrink-0 relative group shadow-2xl border border-white/5 transition-all duration-700 ${isPlaying
                         ? 'scale-[1.05] z-20 opacity-100'
                         : ((centeredItemIndex === (idx % 5)) ? 'scale-[1.15] z-20 opacity-100' : 'opacity-60 hover:opacity-100 hover:scale-[1.05] hover:z-20')
                         }`}>
@@ -284,10 +359,10 @@ export default function Hero({ user, setIsQRModalOpen }) {
           </div>
 
           {/* BOTTOM SECTION: CTA */}
-          <div className="absolute bottom-8 left-8 right-8 h-[60px] flex items-end justify-between z-40 pointer-events-none">
+          <div className="absolute bottom-6 md:bottom-8 left-0 md:left-8 right-0 md:right-8 flex flex-col md:flex-row items-center md:items-end justify-end md:justify-between z-40 pointer-events-none">
 
-            {/* Center Controls (Absolutely Centered) */}
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full md:w-auto flex items-center justify-center gap-6 pb-4 md:pb-0 pointer-events-auto z-50">
+            {/* Center Controls (Absolutely Centered on Desktop) */}
+            <div className="relative md:absolute md:left-1/2 md:-translate-x-1/2 md:bottom-0 w-full md:w-auto flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 pb-4 md:pb-0 pointer-events-auto z-50">
 
               {/* Miniature Clapperboard Play/Pause */}
               <button
@@ -322,54 +397,94 @@ export default function Hero({ user, setIsQRModalOpen }) {
               </button>
 
               {/* Dashboard CTA (Restored with Glow) */}
-              <div className="relative group">
-                <div className="absolute inset-0 bg-theme-4/30 rounded-full blur-[25px] scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-[1.05] transition-all duration-700 pointer-events-none"></div>
-                <Link to="/dashboard" className="relative flex items-center bg-black/60 hover:bg-black/90 text-theme-4 backdrop-blur-md border border-theme-4/30 p-2 rounded-full transition-all duration-500 overflow-hidden shadow-2xl w-[260px] h-14 group-hover:border-theme-4/60">
+              <div 
+                className="relative cursor-pointer touch-none select-none"
+                onMouseEnter={() => !isTouchRef.current && window.matchMedia('(hover: hover)').matches && setIsHovered(true)}
+                onMouseLeave={() => !isTouchRef.current && window.matchMedia('(hover: hover)').matches && setIsHovered(false)}
+              >
+                <div className={`absolute inset-0 bg-theme-4/30 rounded-full blur-[25px] transition-all duration-700 pointer-events-none ${progress > 0 ? 'opacity-100 scale-[1.05]' : 'scale-90 opacity-0'}`}></div>
+                <div 
+                  ref={ctaRef}
+                  draggable={false}
+                  onClick={() => {
+                    if (isTouchRef.current) return; // Require swipe on touch devices
+                    if (!isDragging && progress === 1) navigate('/dashboard');
+                  }}
+                  onMouseDown={handleDragStart}
+                  onTouchStart={handleDragStart}
+                  className={`relative flex items-center bg-black/60 text-theme-4 backdrop-blur-md border border-theme-4/30 p-2 rounded-full overflow-hidden shadow-2xl w-[190px] md:w-[260px] h-12 md:h-14 ${progress > 0 ? 'border-theme-4/60 bg-black/90' : ''}`}
+                  style={{ transition: isDragging ? 'none' : 'all 0.5s cubic-bezier(0.22,1,0.36,1)' }}
+                >
 
                   {/* The SOLID expanding fill track */}
-                  <div className="absolute left-2 top-2 bottom-2 bg-theme-4 w-10 rounded-full opacity-0 group-hover:opacity-100 group-hover:w-[244px] transition-all duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] z-0"></div>
+                  <div 
+                    className="absolute left-1 md:left-2 top-1 md:top-2 bottom-1 md:bottom-2 bg-theme-4 rounded-full z-0 opacity-100 pointer-events-none"
+                    style={{ 
+                      width: `calc(40px + ${progress} * (100% - 48px))`,
+                      transition: isDragging ? 'none' : 'all 0.5s cubic-bezier(0.22,1,0.36,1)'
+                    }}
+                  ></div>
 
                   {/* The rolling film icon */}
-                  <div className="w-10 h-10 rounded-full bg-theme-4 group-hover:bg-black text-black group-hover:text-theme-4 flex items-center justify-center transition-all duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-[204px] group-hover:rotate-[1080deg] z-20 relative border border-black/10">
+                  <div 
+                    className={`w-10 h-10 rounded-full flex items-center justify-center z-20 absolute border border-black/10 pointer-events-none ${progress > 0.5 ? 'bg-black text-theme-4' : 'bg-theme-4 text-black'}`}
+                    style={{ 
+                      left: `calc(${progress} * (100% - 56px) + 4px)`,
+                      transform: `rotate(${progress * 1080}deg)`,
+                      transition: isDragging ? 'none' : 'all 0.5s cubic-bezier(0.22,1,0.36,1)'
+                    }}
+                  >
                     <Film className="w-5 h-5 ml-[1px]" />
                   </div>
 
                   {/* The text (Before Hover - Dark Background, Theme Text) */}
-                  <div className="absolute right-0 top-0 bottom-0 w-full overflow-hidden group-hover:w-0 transition-all duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] z-10 pointer-events-none flex justify-end">
-                    <div className="w-[260px] h-full flex items-center justify-center pl-2 text-[11px] font-bold tracking-[0.35em] uppercase text-theme-4/70 shrink-0">
+                  <div 
+                    className="absolute right-0 top-0 bottom-0 overflow-hidden z-10 pointer-events-none flex justify-end"
+                    style={{ 
+                      width: `${(1 - progress) * 100}%`,
+                      transition: isDragging ? 'none' : 'all 0.5s cubic-bezier(0.22,1,0.36,1)'
+                    }}
+                  >
+                    <div className="w-[190px] md:w-[260px] h-full flex items-center justify-center pl-2 text-[9px] md:text-[11px] font-bold tracking-[0.2em] md:tracking-[0.35em] uppercase text-theme-4/70 shrink-0">
                       Make Your Roll
                     </div>
                   </div>
 
                   {/* The text (After Hover - Theme Background, Black Text) */}
-                  <div className="absolute left-0 top-0 bottom-0 w-0 overflow-hidden group-hover:w-[260px] transition-all duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] z-10 pointer-events-none flex justify-start">
-                    <div className="w-[260px] h-full flex items-center justify-center text-[11px] font-bold tracking-[0.35em] uppercase text-black shrink-0">
+                  <div 
+                    className="absolute left-0 top-0 bottom-0 overflow-hidden z-10 pointer-events-none flex justify-start"
+                    style={{ 
+                      width: `${progress * 100}%`,
+                      transition: isDragging ? 'none' : 'all 0.5s cubic-bezier(0.22,1,0.36,1)'
+                    }}
+                  >
+                    <div className="w-[190px] md:w-[260px] h-full flex items-center justify-center text-[9px] md:text-[11px] font-bold tracking-[0.2em] md:tracking-[0.35em] uppercase text-black shrink-0">
                       Start Your Roll
                     </div>
                   </div>
 
-                </Link>
+                </div>
               </div>
             </div>
 
             {/* Right Interactive Box */}
-            <div className="flex items-center gap-3 hidden lg:flex pointer-events-auto ml-auto">
+            <div className="absolute bottom-4 left-2 right-2 md:bottom-auto md:left-auto md:right-auto md:relative flex flex-row items-center justify-between md:justify-center gap-4 md:gap-3 pointer-events-none md:ml-auto z-50">
 
               {/* GitHub Button */}
-              <div className="relative group">
-                <div className="absolute inset-0 bg-theme-4/30 rounded-2xl blur-[15px] scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 pointer-events-none"></div>
-                <a href="https://github.com/Alwin-Saji/QR" target="_blank" rel="noopener noreferrer" className="relative flex items-center justify-center bg-black/40 hover:bg-theme-4 text-theme-4 hover:text-black backdrop-blur-md border border-theme-4/20 hover:border-theme-4 p-4 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-2xl overflow-hidden w-[58px] hover:w-[130px] h-[60px]">
-                  <FaGithub className="w-6 h-6 flex-shrink-0 z-10 transition-transform duration-500 group-hover:scale-110 group-hover:-translate-x-8" />
-                  <span className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:translate-x-0 translate-x-4 whitespace-nowrap text-[9px] font-bold tracking-[0.15em] uppercase z-10">GitHub</span>
+              <div className="relative group pointer-events-auto">
+                <div className="absolute inset-0 bg-theme-4/30 rounded-xl md:rounded-2xl blur-[15px] scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 pointer-events-none"></div>
+                <a href="https://github.com/Alwin-Saji/QR" target="_blank" rel="noopener noreferrer" className="relative flex items-center justify-center bg-black/40 hover:bg-theme-4 text-theme-4 hover:text-black backdrop-blur-md border border-theme-4/20 hover:border-theme-4 p-3 md:p-4 rounded-xl md:rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-2xl overflow-hidden w-[46px] md:w-[58px] hover:w-[110px] md:hover:w-[130px] h-[46px] md:h-[60px]">
+                  <FaGithub className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 z-10 transition-transform duration-500 group-hover:scale-110 group-hover:-translate-x-6 md:group-hover:-translate-x-8" />
+                  <span className="absolute right-3 md:right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:translate-x-0 translate-x-4 whitespace-nowrap text-[8px] md:text-[9px] font-bold tracking-[0.15em] uppercase z-10">GitHub</span>
                 </a>
               </div>
 
               {/* QR Code Button */}
-              <div className="relative group">
-                <div className="absolute inset-0 bg-theme-4/30 rounded-2xl blur-[15px] scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 pointer-events-none"></div>
-                <button onClick={() => setIsQRModalOpen(true)} className="relative flex items-center justify-center bg-black/40 hover:bg-theme-4 text-theme-4 hover:text-black backdrop-blur-md border border-theme-4/20 hover:border-theme-4 p-4 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-2xl overflow-hidden w-[58px] hover:w-[130px] h-[60px]">
-                  <QrCode className="w-6 h-6 flex-shrink-0 z-10 transition-transform duration-500 group-hover:scale-110 group-hover:-translate-x-8" />
-                  <span className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:translate-x-0 translate-x-4 whitespace-nowrap text-[9px] font-bold tracking-[0.15em] uppercase z-10 text-left leading-tight">Scan To<br />Join</span>
+              <div className="relative group pointer-events-auto">
+                <div className="absolute inset-0 bg-theme-4/30 rounded-xl md:rounded-2xl blur-[15px] scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700 pointer-events-none"></div>
+                <button onClick={() => setIsQRModalOpen(true)} className="relative flex items-center justify-center bg-black/40 hover:bg-theme-4 text-theme-4 hover:text-black backdrop-blur-md border border-theme-4/20 hover:border-theme-4 p-3 md:p-4 rounded-xl md:rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-2xl overflow-hidden w-[46px] md:w-[58px] hover:w-[110px] md:hover:w-[130px] h-[46px] md:h-[60px]">
+                  <QrCode className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 z-10 transition-transform duration-500 group-hover:scale-110 group-hover:-translate-x-6 md:group-hover:-translate-x-8" />
+                  <span className="absolute right-3 md:right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:translate-x-0 translate-x-4 whitespace-nowrap text-[7px] md:text-[9px] font-bold tracking-[0.1em] md:tracking-[0.15em] uppercase z-10 text-left leading-tight">Scan To<br />Join</span>
                 </button>
               </div>
 

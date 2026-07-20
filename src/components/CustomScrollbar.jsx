@@ -106,7 +106,7 @@ export default function CustomScrollbar() {
       onPointerEnter={() => setIsHovered(true)}
       onPointerLeave={() => setIsHovered(false)}
       onPointerDownCapture={handlePointerDown}
-      className="fixed top-1/2 -translate-y-1/2 right-4 h-[80vh] w-[20px] flex flex-col justify-between items-end z-[100] cursor-pointer group py-2"
+      className="fixed top-1/2 -translate-y-1/2 right-4 h-[80vh] w-[20px] hidden md:flex flex-col justify-between items-end z-[100] cursor-pointer group py-2"
       style={{
         opacity: document.documentElement.scrollHeight > window.innerHeight ? 1 : 0,
         pointerEvents: document.documentElement.scrollHeight > window.innerHeight ? 'auto' : 'none',
