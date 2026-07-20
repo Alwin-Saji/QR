@@ -9,6 +9,7 @@
     url('./assets/font/Rosaline.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
+  font-display: block;
 }
 
 :root {
