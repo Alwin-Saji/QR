@@ -13,6 +13,7 @@ export default function Sidebar() {
   const [canManageRestrictions, setCanManageRestrictions] = useState(false);
   const [userEvents, setUserEvents] = useState([]);
   const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
+  const [isMobileRestrictionsOpen, setIsMobileRestrictionsOpen] = useState(false);
 
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -127,39 +128,123 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Toggle */}
-      <button
-        onClick={toggleSidebar}
-        className="md:hidden fixed top-4 left-4 z-[60] p-2 bg-[#111] border border-white/10 text-white rounded-lg shadow-md"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+      {/* Mobile Bottom Navigation Bar (Docked - Cream Theme) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full h-[72px] pb-safe bg-theme-4 rounded-t-[32px] border-t-[3px] border-x-[3px] border-b-0 border-[#0A0A0A] z-[60] flex items-center justify-around px-4 shadow-[0_-12px_40px_rgba(0,0,0,0.4)] overflow-hidden">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+          return (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              className={`flex flex-col items-center justify-center w-[92px] h-[60px] rounded-[26px] transition-all duration-300 ${isActive ? 'bg-[#0a0a0a] text-theme-4 shadow-[0_0_15px_rgba(0,0,0,0.2)]' : 'text-[#0a0a0a]/60 hover:text-[#0a0a0a] hover:bg-black/5 active:scale-95'}`}
+            >
+              <div className="flex items-center justify-center w-5 h-5">
+                {item.icon}
+              </div>
+              <span className="text-[9px] mt-1 font-bold tracking-wider uppercase">{item.name}</span>
+            </NavLink>
+          );
+        })}
 
-      {/* Mobile Overlay */}
+        {isEventPage && canManageRestrictions && (
+          <button
+            onClick={() => setIsMobileRestrictionsOpen(true)}
+            className="flex flex-col items-center justify-center w-[92px] h-[60px] rounded-[26px] text-[#0a0a0a]/60 hover:text-[#0a0a0a] hover:bg-black/5 active:scale-95 transition-all duration-300 relative"
+          >
+            <div className="flex items-center justify-center w-5 h-5 relative">
+              <ShieldOff className="w-5 h-5" />
+              {restrictedUploaders.length > 0 && (
+                <div className="absolute -top-1 -right-2 w-2.5 h-2.5 bg-[#ffd60a] border-2 border-[#0A0A0A] rounded-full shadow-sm" />
+              )}
+            </div>
+            <span className="text-[9px] mt-1 font-bold tracking-wider uppercase">Restricted</span>
+          </button>
+        )}
+
+        <button
+          onClick={handleAuthAction}
+          className="flex flex-col items-center justify-center w-[92px] h-[60px] rounded-[26px] text-[#0a0a0a]/60 hover:text-red-600 hover:bg-red-500/10 active:scale-95 transition-all duration-300"
+        >
+          <div className="flex items-center justify-center w-5 h-5">
+            {user ? <LogOut className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+          </div>
+          <span className="text-[9px] mt-1 font-bold tracking-wider uppercase">{user ? "Sign Out" : "Sign In"}</span>
+        </button>
+      </nav>
+
+      {/* Mobile Restrictions Modal */}
       <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 md:hidden"
-            onClick={toggleSidebar}
-          />
+        {isMobileRestrictionsOpen && (
+          <div className="md:hidden fixed inset-0 z-[70] flex flex-col justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              onClick={() => setIsMobileRestrictionsOpen(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative bg-[#111] rounded-t-3xl border-t border-white/10 w-full max-h-[85vh] flex flex-col overflow-hidden shadow-[0_-20px_50px_rgba(0,0,0,0.8)]"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-white/5 bg-[#161616]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-theme-4/10 flex items-center justify-center">
+                    <ShieldOff className="w-5 h-5 text-theme-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold tracking-wide">Restricted Users</h3>
+                    <p className="text-xs text-theme-4 font-mono">{restrictedUploaders.length} blocked</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsMobileRestrictionsOpen(false)} className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-full active:scale-95 transition-transform">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5 overflow-y-auto">
+                {restrictedUploaders.length > 0 ? (
+                  <div className="space-y-3">
+                    {restrictedUploaders.map((u) => (
+                      <div key={u.uploader_id} className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 shadow-sm">
+                        <span className="text-sm text-gray-200 font-medium truncate pr-4">
+                          {u.display_name || 'Guest'}
+                        </span>
+                        <button onClick={() => handleUnrestrictUploader(u.uploader_id)} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-[#111] bg-theme-4 rounded-xl hover:scale-105 active:scale-95 transition-transform shrink-0 shadow-[0_0_15px_rgba(245,238,220,0.2)]">
+                          <Unlock className="w-3.5 h-3.5" />
+                          Unrestrict
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-12 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                      <ShieldOff className="w-8 h-8 text-gray-600" />
+                    </div>
+                    <p className="text-gray-400 font-medium">No restricted users</p>
+                    <p className="text-gray-600 text-xs mt-1">Everyone is allowed to upload.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
       {/* Spacer for desktop layout */}
       <div className="hidden md:block w-[80px] flex-shrink-0" />
 
-      {/* Minimal Edge-to-Edge Sidebar */}
+      {/* Desktop Edge-to-Edge Sidebar */}
       <motion.aside
         initial="collapsed"
         animate={(isHovered || isOpen) ? "expanded" : "collapsed"}
         variants={sidebarVariants}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-[#0A0A0A] border-r border-white/5
-          ${isOpen ? 'translate-x-0' : '-translate-x-[150%] md:translate-x-0'} transition-transform duration-300 md:transition-none`}
+        className="hidden md:flex fixed top-0 bottom-0 left-0 z-50 flex-col bg-[#0A0A0A] border-r border-white/5"
       >
         {/* Logo Section */}
         <div className="h-24 flex items-center px-[22px]">

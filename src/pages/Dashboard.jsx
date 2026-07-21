@@ -77,6 +77,14 @@ export default function Dashboard() {
     if (!window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) return;
 
     try {
+      // First, delete the folder and all its contents in ImageKit
+      await fetch('/api/imagekit-delete-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderPath: `/events/${eventId}` })
+      }).catch(err => console.error("ImageKit folder delete failed:", err));
+
+      // Then delete the event from the database (which cascades to photos table)
       const { error } = await supabase
         .from('events')
         .delete()

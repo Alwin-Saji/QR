@@ -188,7 +188,7 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
   }
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white backdrop-blur-md px-4 py-3 rounded-full border border-[#050505]/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-fit transition-all">
+    <div className="fixed bottom-[100px] md:bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white backdrop-blur-md px-4 py-3 rounded-full border border-[#050505]/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-fit transition-all">
       <input
         type="file"
         accept="image/*"

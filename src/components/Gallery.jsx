@@ -202,7 +202,7 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
     setIsDeleting(true);
     try {
       const photosToDelete = photos.filter(p => selectedIds.includes(p.id));
-      const filePaths = photosToDelete.map(p => getFilePathFromUrl(p.url));
+      const fileUrls = photosToDelete.map(p => p.url);
 
       const { error: dbError } = await supabase
         .from('photos')
@@ -213,8 +213,12 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
 
       setPhotos(current => current.filter(p => !selectedIds.includes(p.id)));
 
-      if (filePaths.length > 0) {
-        await supabase.storage.from('events').remove(filePaths);
+      if (fileUrls.length > 0) {
+        await fetch('/api/imagekit-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUrls })
+        }).catch(err => console.error("ImageKit delete failed:", err));
       }
 
       setSelectionMode(false);
@@ -258,15 +262,19 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
       const photoToDelete = photos.find(p => p.id === draggedPhotoId);
       if (!photoToDelete) return;
 
-      const filePath = getFilePathFromUrl(photoToDelete.url);
+      const fileUrl = photoToDelete.url;
       const { error: dbError } = await supabase.from('photos').delete().eq('id', draggedPhotoId);
 
       if (dbError) throw dbError;
 
       setPhotos(current => current.filter(p => p.id !== draggedPhotoId));
 
-      if (filePath) {
-        await supabase.storage.from('events').remove([filePath]);
+      if (fileUrl) {
+        await fetch('/api/imagekit-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUrls: [fileUrl] })
+        }).catch(err => console.error("ImageKit delete failed:", err));
       }
 
       toast.success('Photo deleted');
@@ -286,7 +294,7 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
       const photoToDelete = photos.find(p => p.id === photoId);
       if (!photoToDelete) return;
 
-      const filePath = getFilePathFromUrl(photoToDelete.url);
+      const fileUrl = photoToDelete.url;
 
       // Try using the secure RPC function first
       const { error } = await supabase.rpc('delete_guest_photo', {
@@ -306,8 +314,12 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
       }
 
       setPhotos(current => current.filter(p => p.id !== photoId));
-      if (filePath) {
-        await supabase.storage.from('events').remove([filePath]);
+      if (fileUrl) {
+        await fetch('/api/imagekit-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUrls: [fileUrl] })
+        }).catch(err => console.error("ImageKit delete failed:", err));
       }
 
       toast.success('Photo deleted');
@@ -371,7 +383,7 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
           return itemUploaderId === uploaderId;
         });
         const photoIds = photosToDelete.map((item) => item.id);
-        const filePaths = photosToDelete.map((item) => getFilePathFromUrl(item.url));
+        const fileUrls = photosToDelete.map((item) => item.url);
 
         if (photoIds.length > 0) {
           const { error: deleteError } = await supabase
@@ -384,8 +396,12 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
             toast.error('Restricted, but failed to remove existing photos');
           } else {
             setPhotos((current) => current.filter((item) => !photoIds.includes(item.id)));
-            if (filePaths.length > 0) {
-              await supabase.storage.from('events').remove(filePaths);
+            if (fileUrls.length > 0) {
+              await fetch('/api/imagekit-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileUrls })
+              }).catch(err => console.error("ImageKit delete failed:", err));
             }
             toast.success(`Restricted ${uploaderName} and removed their photos`);
           }
@@ -708,7 +724,7 @@ export default function Gallery({ eventId, eventName, isCreator, currentUploader
       )}
       {draggedPhotoId && isCreator && (
         <div
-          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center pointer-events-auto"
+          className="fixed bottom-32 md:bottom-28 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center pointer-events-auto"
           onDragOver={handleDragOverTrash}
           onDrop={handleDropOnTrash}
         >

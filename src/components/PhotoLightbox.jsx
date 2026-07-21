@@ -101,54 +101,64 @@ export default function PhotoLightbox({
           />
         </div>
 
-        <div className="flex w-full max-w-5xl flex-col gap-4 rounded-3xl bg-black/40 backdrop-blur-2xl p-6 shadow-2xl border border-theme-4/20 sm:flex-row sm:items-center sm:justify-between animate-in slide-in-from-bottom-8 duration-500">
-          <div className="min-w-0 text-center sm:text-left flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-theme-3 to-theme-4 p-[2px] shadow-lg">
-              <div className="h-full w-full rounded-full bg-[#0a0a0a] flex items-center justify-center">
-                <span className="text-theme-4 font-bold text-lg">{uploadedBy.charAt(0).toUpperCase()}</span>
+        <div className="flex w-full max-w-3xl flex-col rounded-3xl bg-black/60 backdrop-blur-3xl p-4 sm:p-6 shadow-2xl border border-theme-4/20 animate-in slide-in-from-bottom-8 duration-500 gap-4 sm:gap-6">
+          {/* Top Info Row */}
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-theme-3 to-theme-4 p-[2px] shadow-lg flex-shrink-0">
+                <div className="h-full w-full rounded-full bg-[#0a0a0a] flex items-center justify-center">
+                  <span className="text-theme-4 font-bold text-sm sm:text-lg">{uploadedBy.charAt(0).toUpperCase()}</span>
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="truncate text-base font-bold text-theme-4 tracking-wide">Uploaded by {uploadedBy}</p>
-              {hasMultiple && (
-                <p className="text-xs font-semibold text-theme-4/50 tracking-wider uppercase mt-1">
-                  Photo {currentIndex + 1} of {photos.length}
+              <div className="min-w-0 flex flex-col justify-center">
+                <p className="truncate text-sm sm:text-base font-bold text-theme-4 tracking-wide">
+                  <span className="opacity-70 font-normal text-xs sm:text-sm mr-1">By</span>
+                  {uploadedBy}
                 </p>
-              )}
+                {hasMultiple && (
+                  <p className="text-[10px] sm:text-xs font-semibold text-theme-4/50 tracking-wider uppercase mt-0.5">
+                    Photo {currentIndex + 1} of {photos.length}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {hasMultiple && (
+          {/* Bottom Actions Row */}
+          <div className="flex items-center justify-between gap-3 sm:gap-4 w-full pt-4 border-t border-theme-4/10">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {hasMultiple && (
+                <button
+                  type="button"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className={`flex items-center justify-center w-11 h-11 sm:w-auto sm:h-auto sm:px-5 sm:py-2.5 rounded-full border text-sm font-bold transition-all duration-300 shadow-lg hover:scale-105 ${isPlaying ? 'border-theme-3 bg-theme-3/20 text-theme-3' : 'border-theme-4/30 bg-black/40 text-theme-4 hover:bg-black/60 hover:border-theme-4/60'}`}
+                  title={isPlaying ? "Pause Slideshow" : "Play Slideshow"}
+                >
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 sm:-ml-1" />}
+                  <span className="hidden sm:inline ml-2">{isPlaying ? 'Pause' : 'Play'}</span>
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setIsPlaying(!isPlaying)}
-                className={`flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-bold transition-all duration-300 shadow-lg hover:scale-105 ${isPlaying ? 'border-theme-3 bg-theme-3/20 text-theme-3' : 'border-theme-4/30 bg-black/40 text-theme-4 hover:bg-black/60 hover:border-theme-4/60'}`}
-                title={isPlaying ? "Pause Slideshow" : "Play Slideshow"}
+                onClick={() => onShowQR(photo)}
+                className="flex items-center justify-center w-11 h-11 sm:w-auto sm:h-auto sm:px-5 sm:py-2.5 rounded-full border border-theme-4/30 bg-black/40 text-sm font-bold text-theme-4 transition-all duration-300 shadow-lg hover:bg-black/60 hover:border-theme-4/60 hover:scale-105"
+                title="Show QR code"
               >
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {isPlaying ? 'Pause' : 'Play'}
+                <QrCode className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">Scan QR</span>
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => onShowQR(photo)}
-              className="flex items-center gap-2 rounded-full border border-theme-4/30 bg-black/40 px-5 py-2.5 text-sm font-bold text-theme-4 transition-all duration-300 shadow-lg hover:bg-black/60 hover:border-theme-4/60 hover:scale-105"
-              title="Show QR code"
-            >
-              <QrCode className="h-4 w-4" />
-              Scan QR
-            </button>
+            </div>
+            
             <a
               href={`${photo.url}?download=${downloadName}`}
               download={downloadName}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-theme-3 to-theme-4 px-6 py-2.5 text-sm font-bold text-[#0a0a0a] transition-all duration-300 shadow-[0_0_20px_rgba(var(--theme-3-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--theme-4-rgb),0.5)] hover:scale-105"
+              className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-full bg-gradient-to-r from-theme-3 to-theme-4 px-6 py-3 sm:py-2.5 text-sm font-bold text-[#0a0a0a] transition-all duration-300 shadow-[0_0_20px_rgba(var(--theme-3-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--theme-4-rgb),0.5)] hover:scale-105"
               title="Download photo"
             >
-              <Download className="h-4 w-4" />
-              Save
+              <Download className="h-4 w-4 sm:-ml-1" />
+              Save Photo
             </a>
           </div>
         </div>

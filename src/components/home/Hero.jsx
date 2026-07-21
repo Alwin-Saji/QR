@@ -267,33 +267,78 @@ export default function Hero({ user, setIsQRModalOpen }) {
           {/* Ambient Glow */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[50vh] bg-theme-1/20 blur-[120px] rounded-full pointer-events-none z-0 transform-gpu will-change-transform"></div>
 
+          {/* MOBILE ONLY: Full Top-Half Vintage Frame (Tucked behind film strip) */}
+          <div className="absolute top-4 left-4 right-4 bottom-[30%] pointer-events-none z-[5] md:hidden drop-shadow-[0_0_8px_rgba(245,238,220,0.3)]">
+            
+            {/* Outer thick border */}
+            <div className="absolute inset-0 border-t-[2.5px] border-l-[2.5px] border-r-[2.5px] border-theme-4/40"></div>
+            
+            {/* Inner thin border */}
+            <div className="absolute top-[8px] left-[8px] right-[8px] bottom-0 border-t border-l border-r border-theme-4/40"></div>
+
+            {/* Middle horizontal lines (connecting the SVG corners) */}
+            <div className="absolute top-[21.25px] left-[100px] right-[100px] h-[1.5px] bg-theme-4/40"></div>
+            <div className="absolute top-[31.75px] left-[100px] right-[100px] h-[0.5px] bg-theme-4/40"></div>
+
+            {/* Left vertical lines (extending down from SVG corners) */}
+            <div className="absolute top-[100px] bottom-0 bg-theme-4/40" style={{ left: '21.25px', width: '1.5px' }}></div>
+            <div className="absolute top-[100px] bottom-0 bg-theme-4/40" style={{ left: '31.75px', width: '0.5px' }}></div>
+
+            {/* Right vertical lines (extending down from SVG corners) */}
+            <div className="absolute top-[100px] bottom-0 bg-theme-4/40" style={{ right: '21.25px', width: '1.5px' }}></div>
+            <div className="absolute top-[100px] bottom-0 bg-theme-4/40" style={{ right: '31.75px', width: '0.5px' }}></div>
+
+            {/* Top Left Corner Accents */}
+            <svg className="absolute top-0 left-0 w-[100px] h-[100px] text-theme-4/40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 22 100 L 22 35 L 35 22 L 100 22" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" />
+              <path d="M 32 100 L 32 45 L 45 32 L 100 32" stroke="currentColor" strokeWidth="0.5" strokeLinejoin="miter" />
+              <polygon points="15,7 23,15 15,23 7,15" fill="currentColor" />
+              <line x1="8" y1="8" x2="22" y2="22" stroke="currentColor" strokeWidth="1" />
+            </svg>
+
+            {/* Top Right Corner Accents */}
+            <svg className="absolute top-0 right-0 w-[100px] h-[100px] text-theme-4/40" style={{ transform: 'scaleX(-1)' }} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 22 100 L 22 35 L 35 22 L 100 22" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" />
+              <path d="M 32 100 L 32 45 L 45 32 L 100 32" stroke="currentColor" strokeWidth="0.5" strokeLinejoin="miter" />
+              <polygon points="15,7 23,15 15,23 7,15" fill="currentColor" />
+              <line x1="8" y1="8" x2="22" y2="22" stroke="currentColor" strokeWidth="1" />
+            </svg>
+
+            {/* Bottom Terminators (prevent sharp chopped look) */}
+            <div className="absolute bottom-0 left-0 w-3 h-[2.5px] bg-theme-4/40 translate-y-1/2"></div>
+            <div className="absolute bottom-0 right-0 w-3 h-[2.5px] bg-theme-4/40 translate-y-1/2"></div>
+            <div className="absolute bottom-0 left-[8px] w-2 h-[1px] bg-theme-4/40 translate-y-1/2"></div>
+            <div className="absolute bottom-0 right-[8px] w-2 h-[1px] bg-theme-4/40 translate-y-1/2"></div>
+          </div>
+
           {/* OVERLAY SECTION: Typography (Mix Blend Mode) */}
-          <div ref={textContainerRef} className="absolute inset-0 flex flex-col justify-start md:justify-center pt-[15vh] md:pt-0 items-center text-center z-30 px-4 pointer-events-none mix-blend-difference text-white">
-            <h1 className="mt-0 md:mt-8 text-7xl md:text-[10rem] lg:text-[18rem] font-heading font-normal leading-[0.8] md:leading-[0.6] transition-all duration-700 pt-8 md:pt-0">
+          <div ref={textContainerRef} className="absolute inset-0 flex flex-col justify-start md:justify-center pt-[18vh] md:pt-0 items-center text-center z-30 px-4 pointer-events-none mix-blend-difference md:text-white">
+            <h1 className="mt-0 md:mt-8 text-7xl md:text-[10rem] lg:text-[18rem] font-heading font-normal leading-[0.8] md:leading-[0.6] transition-all duration-700 pt-8 md:pt-0 bg-gradient-to-b from-white via-theme-4 to-[#b09e7d] text-transparent bg-clip-text md:bg-none md:text-white md:bg-clip-border">
               Mementos
             </h1>
             <div className="mt-4 md:mt-8 flex flex-col items-center gap-3">
-              <p className="text-xs md:text-lg font-sans font-light italic max-w-md leading-relaxed tracking-wider">
-                " You don't take a <span className='font-heading text-2xl md:text-3xl'>photograph</span>, you make it. "
+              <p className="text-xs md:text-lg font-sans font-light italic max-w-md leading-relaxed tracking-wider text-theme-4/90 md:text-white">
+                " You don't take a <span className='font-heading text-2xl md:text-3xl bg-gradient-to-r from-theme-4 to-white text-transparent bg-clip-text md:bg-none md:text-white md:bg-clip-border px-2 py-1 -mx-2 -my-1 inline-block'>photograph</span>, you make it. "
               </p>
             </div>
 
-            {/* Left Meta Info (Circular Corner Text via Mix Blend) */}
-            <div className="absolute -left-[100px] -bottom-[100px] md:-left-[200px] md:-bottom-[200px] w-[200px] md:w-[400px] h-[200px] md:h-[400px] pointer-events-none opacity-90">
-              <svg viewBox="0 0 200 200" className="w-full h-full animate-[spin_35s_linear_infinite] overflow-visible">
-                {/* Circle path for text (radius = 90, center = 100,100) */}
-                <path id="cornerTextPath" d="M 100, 100 m -90, 0 a 90,90 0 1,1 180,0 a 90,90 0 1,1 -180,0" fill="none" />
-                <text className="text-[17px] font-heading font-normal tracking-[0.1em] fill-current drop-shadow-sm">
-                  <textPath href="#cornerTextPath" startOffset="0%">
-                    Pure <tspan className="fill-transparent" style={{ stroke: 'currentColor', strokeWidth: '0.5px' }}>Analog</tspan> • Pure <tspan className="fill-transparent" style={{ stroke: 'currentColor', strokeWidth: '0.5px' }}>Analog</tspan> • Pure <tspan className="fill-transparent" style={{ stroke: 'currentColor', strokeWidth: '0.5px' }}>Analog</tspan> • Pure <tspan className="fill-transparent" style={{ stroke: 'currentColor', strokeWidth: '0.5px' }}>Analog</tspan> •
-                  </textPath>
-                </text>
-              </svg>
-            </div>
           </div>
 
+          {/* Left Meta Info (Circular Corner Text) */}
+          <div className="absolute -left-[140px] -bottom-[140px] md:-left-[200px] md:-bottom-[200px] w-[280px] md:w-[400px] h-[280px] md:h-[400px] pointer-events-none opacity-90 z-20 text-theme-4 md:mix-blend-difference">
+            <svg viewBox="0 0 200 200" className="w-full h-full animate-[spin_35s_linear_infinite] overflow-visible">
+              {/* Circle path for text (radius = 90, center = 100,100) */}
+              <path id="cornerTextPath" d="M 100, 100 m -90, 0 a 90,90 0 1,1 180,0 a 90,90 0 1,1 -180,0" fill="none" />
+              <text className="text-[17px] font-heading font-normal tracking-[0.1em] fill-current drop-shadow-[0_0_8px_rgba(245,238,220,0.4)]">
+                <textPath href="#cornerTextPath" startOffset="0%">
+                  Pure <tspan className="fill-transparent" style={{ stroke: 'currentColor', strokeWidth: '0.5px' }}>Analog</tspan> • Pure <tspan className="fill-transparent" style={{ stroke: 'currentColor', strokeWidth: '0.5px' }}>Analog</tspan> • Pure <tspan className="fill-transparent" style={{ stroke: 'currentColor', strokeWidth: '0.5px' }}>Analog</tspan> • Pure <tspan className="fill-transparent" style={{ stroke: 'currentColor', strokeWidth: '0.5px' }}>Analog</tspan> •
+                </textPath>
+              </text>
+            </svg>
+          </div>
+          
           {/* MIDDLE SECTION: Edge-to-Edge Endless Film Reel */}
-          <div className="absolute top-[55%] md:top-1/2 -translate-y-1/2 left-0 right-0 w-full z-10 flex flex-col pt-0 md:pt-20 justify-center">
+          <div className="absolute top-[58%] md:top-1/2 -translate-y-1/2 left-0 right-0 w-full z-10 flex flex-col pt-0 md:pt-20 justify-center scale-110 md:scale-100 origin-center">
 
             {/* BACKGROUND Track (Reverse / Blurred) */}
             <div className="absolute top-[60%] -translate-y-1/2 w-full z-0 pointer-events-none rotate-[10deg] scale-110 transform-gpu">
@@ -358,7 +403,7 @@ export default function Hero({ user, setIsQRModalOpen }) {
             </div>
           </div>
 
-          {/* BOTTOM SECTION: CTA */}
+          {/* BOTTOM SECTION: Clapperboard & QR Code CTA */}
           <div className="absolute bottom-6 md:bottom-8 left-0 md:left-8 right-0 md:right-8 flex flex-col md:flex-row items-center md:items-end justify-end md:justify-between z-40 pointer-events-none">
 
             {/* Center Controls (Absolutely Centered on Desktop) */}

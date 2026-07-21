@@ -15,6 +15,16 @@ const AnimatedLine = () => (
 );
 
 export default function Footer() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  const [inView, setInView] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <footer className="relative bg-[#050505] overflow-hidden w-full">
       <AnimatedLine />
@@ -56,9 +66,12 @@ export default function Footer() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full mt-22"
+          onViewportEnter={() => {
+            if (isMobile) setInView(true);
+          }}
+          className={`w-full mt-22 group ${isMobile && inView ? 'is-active' : ''}`}
         >
-          <h2 className="text-[clamp(4rem,20vw,30rem)] leading-[0.75] font-heading font-normal text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.2)] md:[-webkit-text-stroke:2px_rgba(255,255,255,0.2)] hover:text-white transition-all duration-700 cursor-default -ml-1 md:-ml-3 tracking-wider">
+          <h2 className="text-[clamp(4rem,20vw,30rem)] leading-[0.75] font-heading font-normal text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.2)] md:[-webkit-text-stroke:2px_rgba(255,255,255,0.2)] group-hover:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] group-[.is-active]:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] md:group-hover:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] md:group-[.is-active]:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] group-hover:text-white group-[.is-active]:text-white transition-all duration-700 cursor-default -ml-1 md:-ml-3 tracking-wider">
             Mementos.
           </h2>
         </motion.div>

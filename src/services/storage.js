@@ -80,24 +80,34 @@ export const uploadPhoto = async (eventId, file, uploader, options = {}) => {
     const fileName = `${Date.now()}_${compressedFile.name}`;
     const filePath = `${eventId}/${fileName}`;
 
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase
-      .storage
-      .from('events')
-      .upload(filePath, compressedFile);
+    const authRes = await fetch('/api/imagekit-auth');
+    if (!authRes.ok) {
+      throw new Error('Failed to fetch ImageKit authentication parameters');
+    }
+    const authData = await authRes.json();
 
-    if (uploadError) {
-      console.error('Upload failed:', uploadError);
-      throw uploadError;
+    const formData = new FormData();
+    formData.append("file", compressedFile);
+    formData.append("publicKey", import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY);
+    formData.append("signature", authData.signature);
+    formData.append("expire", authData.expire);
+    formData.append("token", authData.token);
+    formData.append("fileName", fileName);
+    formData.append("folder", `/events/${eventId}`);
+    
+    const uploadRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!uploadRes.ok) {
+      const errorData = await uploadRes.json();
+      console.error('ImageKit Upload failed:', errorData);
+      throw new Error(errorData.message || 'ImageKit upload failed');
     }
 
-    // Get public URL
-    const { data: publicUrlData } = supabase
-      .storage
-      .from('events')
-      .getPublicUrl(filePath);
-
-    const downloadURL = publicUrlData.publicUrl;
+    const uploadData = await uploadRes.json();
+    const downloadURL = uploadData.url;
 
     // Check if event has auto_delete enabled
     const { data: eventData } = await supabase

@@ -1,7 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
+const FeatureBlock = ({ children }) => {
+  const [isMobile, setIsMobile] = useState(false);
+  const [inView, setInView] = useState(false);
 
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const lineVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }
+  };
+
+  return (
+    <motion.div
+      variants={lineVariants}
+      initial="hidden"
+      whileInView={isMobile ? ["visible", "hover"] : "visible"}
+      viewport={{ once: true, margin: "-100px" }}
+      whileHover="hover"
+      onViewportEnter={() => {
+        if (isMobile) setInView(true);
+      }}
+      className={`relative cursor-default overflow-hidden ${isMobile && inView ? 'is-active group' : 'group'}`}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 const FeatureBadge = ({ text, id, position = "right" }) => {
   const alignClass = position === "right"
@@ -9,7 +40,7 @@ const FeatureBadge = ({ text, id, position = "right" }) => {
     : "-top-24 -left-24 md:-top-30 md:-left-60";
 
   return (
-    <div className={`absolute ${alignClass} w-48 h-48 md:w-80 md:h-80 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-10`}>
+    <div className={`absolute ${alignClass} w-48 h-48 md:w-80 md:h-80 opacity-0 group-hover:opacity-100 group-[.is-active]:opacity-100 transition-opacity duration-700 pointer-events-none z-10`}>
       <svg viewBox="0 0 160 160" className="w-full h-full overflow-visible">
         <g>
           <animateTransform attributeName="transform" type="rotate" from="0 80 80" to="360 80 80" dur="25s" repeatCount="indefinite" />
@@ -38,8 +69,8 @@ const AnimatedLine = () => (
   </svg>
 );
 
-const InstantIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-16 h-16 mb-8 text-theme-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+const InstantIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={`text-theme-4 opacity-0 group-hover:opacity-100 group-[.is-active]:opacity-100 transition-opacity duration-500 ${className}`}>
     <motion.path
       d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"
       fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
@@ -56,8 +87,8 @@ const InstantIcon = () => (
   </svg>
 );
 
-const FrictionIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-16 h-16 mb-8 text-theme-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-visible">
+const FrictionIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={`text-theme-4 opacity-0 group-hover:opacity-100 group-[.is-active]:opacity-100 transition-opacity duration-500 overflow-visible ${className}`}>
     <motion.path
       d="M12 2l2.4 7.6 7.6 2.4-7.6 2.4-2.4 7.6-2.4-7.6-7.6-2.4 7.6-2.4z"
       fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
@@ -79,8 +110,8 @@ const FrictionIcon = () => (
   </svg>
 );
 
-const SecureIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-16 h-16 mb-8 text-theme-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-visible">
+const SecureIcon = ({ className = "" }) => (
+  <svg viewBox="0 0 24 24" className={`text-theme-4 opacity-0 group-hover:opacity-100 group-[.is-active]:opacity-100 transition-opacity duration-500 overflow-visible ${className}`}>
     <motion.path
       d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
       fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
@@ -108,7 +139,7 @@ export default function Features() {
   };
 
   return (
-    <section id="features" className="relative bg-[#050505] pt-0 pb-0 overflow-hidden w-full">
+    <section id="features" className="relative bg-[#050505] pt-0 pb-0 overflow-hidden w-full -mt-[1px]">
       <div className="w-full">
 
         {/* Features Title */}
@@ -123,76 +154,61 @@ export default function Features() {
         <div className="flex flex-col gap-16 md:gap-32">
 
           {/* Feature 1 */}
-          <motion.div
-            variants={lineVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            whileHover="hover"
-            className="group relative cursor-default overflow-hidden"
-          >
+          <FeatureBlock>
             <AnimatedLine />
             <div className="w-[80vw] mx-auto relative pt-12 md:pt-16 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-16">
               <FeatureBadge id="badge-instant" text="REALTIME • INSTANT • REALTIME • INSTANT • " position="right" />
               <div className="order-2 md:order-1 max-w-md">
-                <InstantIcon />
-                <p className="text-theme-4/40 text-lg md:text-2xl font-light leading-relaxed group-hover:text-theme-4/90 transition-colors duration-500">
+                <p className="text-theme-4/40 text-lg md:text-2xl font-light leading-relaxed group-hover:text-theme-4/90 group-[.is-active]:text-theme-4/90 transition-colors duration-500">
                   Powered by Supabase Realtime. Photos hit the screen the exact second they are snapped. No waiting, no refreshing. A live, shared experience.
                 </p>
               </div>
-              <h3 className="order-1 md:order-2 mt-8 md:mt-12 relative inline-block w-fit text-[clamp(4rem,10vw,12rem)] leading-[0.9] font-heading font-normal text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.2)] md:[-webkit-text-stroke:2px_rgba(255,255,255,0.2)] group-hover:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] md:group-hover:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] group-hover:text-white transition-all duration-700">
-                Instant.
-              </h3>
+              <div className="order-1 md:order-2 mt-8 md:mt-12 flex items-center gap-4 md:gap-8 text-[clamp(4rem,10vw,12rem)]">
+                <h3 className="relative inline-block w-fit leading-[0.9] font-heading font-normal text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.2)] md:[-webkit-text-stroke:2px_rgba(255,255,255,0.2)] group-hover:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] group-[.is-active]:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] md:group-hover:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] md:group-[.is-active]:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] group-hover:text-white group-[.is-active]:text-white transition-all duration-700">
+                  Instant.
+                </h3>
+                <InstantIcon className="w-[0.6em] h-[0.6em] shrink-0" />
+              </div>
             </div>
-          </motion.div>
+          </FeatureBlock>
 
           {/* Feature 2 */}
-          <motion.div
-            variants={lineVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            whileHover="hover"
-            className="group relative cursor-default overflow-hidden"
-          >
+          <FeatureBlock>
             <AnimatedLine />
             <div className="w-[80vw] mx-auto relative pt-12 md:pt-16 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-16">
               <FeatureBadge id="badge-friction" text="NO APP • ZERO FRICTION • NO APP • ZERO FRICTION • " position="left" />
-              <h3 className="order-1 mt-8 md:mt-12 relative inline-block w-fit text-[clamp(4rem,10vw,12rem)] leading-[0.9] font-heading font-normal text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.2)] md:[-webkit-text-stroke:2px_rgba(255,255,255,0.2)] group-hover:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] md:group-hover:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] group-hover:text-white transition-all duration-700">
-                Frictionless.
-              </h3>
+              <div className="order-1 mt-8 md:mt-12 flex items-center justify-start gap-4 md:gap-8 text-[clamp(4rem,10vw,12rem)]">
+                <h3 className="relative inline-block w-fit leading-[0.9] font-heading font-normal text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.2)] md:[-webkit-text-stroke:2px_rgba(255,255,255,0.2)] group-hover:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] group-[.is-active]:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] md:group-hover:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] md:group-[.is-active]:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] group-hover:text-white group-[.is-active]:text-white transition-all duration-700">
+                  Frictionless.
+                </h3>
+                <FrictionIcon className="w-[0.6em] h-[0.6em] shrink-0" />
+              </div>
               <div className="order-2 max-w-md md:text-right flex flex-col md:items-end z-10 relative">
-                <FrictionIcon />
-                <p className="text-theme-4/40 text-lg md:text-2xl font-light leading-relaxed group-hover:text-theme-4/90 transition-colors duration-500">
+                <p className="text-theme-4/40 text-lg md:text-2xl font-light leading-relaxed group-hover:text-theme-4/90 group-[.is-active]:text-theme-4/90 transition-colors duration-500">
                   Point, shoot, done. Guests don't need to download an app or create an account. They just scan the QR code and they're instantly part of it.
                 </p>
               </div>
             </div>
-          </motion.div>
+          </FeatureBlock>
 
           {/* Feature 3 */}
-          <motion.div
-            variants={lineVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            whileHover="hover"
-            className="group relative cursor-default overflow-hidden"
-          >
+          <FeatureBlock>
             <AnimatedLine />
             <div className="w-[80vw] mx-auto relative pt-12 md:pt-16 pb-12 md:pb-16 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-16">
               <FeatureBadge id="badge-secure" text="PRIVATE • SECURE • PRIVATE • SECURE • " position="right" />
               <div className="order-2 md:order-1 max-w-md z-10 relative">
-                <SecureIcon />
-                <p className="text-theme-4/40 text-lg md:text-2xl font-light leading-relaxed group-hover:text-theme-4/90 transition-colors duration-500">
+                <p className="text-theme-4/40 text-lg md:text-2xl font-light leading-relaxed group-hover:text-theme-4/90 group-[.is-active]:text-theme-4/90 transition-colors duration-500">
                   Backed by strict Row Level Security. You own your event, and every memory automatically vanishes after 24 hours. Total privacy.
                 </p>
               </div>
-              <h3 className="order-1 md:order-2 mt-8 md:mt-12 relative inline-block w-fit text-[clamp(4rem,10vw,12rem)] leading-[0.9] font-heading font-normal text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.2)] md:[-webkit-text-stroke:2px_rgba(255,255,255,0.2)] group-hover:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] md:group-hover:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] group-hover:text-white transition-all duration-700">
-                Secure.
-              </h3>
+              <div className="order-1 md:order-2 mt-8 md:mt-12 flex items-center gap-4 md:gap-8 text-[clamp(4rem,10vw,12rem)]">
+                <h3 className="relative inline-block w-fit leading-[0.9] font-heading font-normal text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.2)] md:[-webkit-text-stroke:2px_rgba(255,255,255,0.2)] group-hover:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] group-[.is-active]:[-webkit-text-stroke:1px_rgba(255,255,255,0.8)] md:group-hover:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] md:group-[.is-active]:[-webkit-text-stroke:2px_rgba(255,255,255,0.8)] group-hover:text-white group-[.is-active]:text-white transition-all duration-700">
+                  Secure.
+                </h3>
+                <SecureIcon className="w-[0.6em] h-[0.6em] shrink-0" />
+              </div>
             </div>
-          </motion.div>
+          </FeatureBlock>
 
         </div>
       </div>
