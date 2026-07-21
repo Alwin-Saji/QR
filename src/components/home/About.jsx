@@ -30,7 +30,7 @@ export default function About() {
           transition={{ duration: 1, delay: 0.1 }}
           className="md:hidden w-full mb-8 sm:mb-12"
         >
-          <h2 className="text-[#f5eedc]/80 text-center text-5xl sm:text-6xl font-heading font-black tracking-wide border-b border-theme-4/10 pb-4">
+          <h2 className="text-[#f5eedc]/80 text-center text-7xl sm:text-6xl font-heading font-black tracking-wide border-b border-theme-4/10 pb-4">
             about
           </h2>
         </motion.div>
