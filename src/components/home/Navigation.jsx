@@ -4,6 +4,7 @@ import { Camera, ArrowRight, Menu, X, Grip, Aperture } from 'lucide-react';
 
 export default function Navigation({ user }) {
   const [isVisible, setIsVisible] = useState(true);
+  const [isMobileVisible, setIsMobileVisible] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const lastScrollY = React.useRef(0);
 
@@ -17,10 +18,13 @@ export default function Navigation({ user }) {
 
           if (currentScrollY < 50) {
             setIsVisible(true);
+            setIsMobileVisible(false);
           } else if (currentScrollY > lastScrollY.current) {
             setIsVisible(false);
+            setIsMobileVisible(false);
           } else {
             setIsVisible(true);
+            setIsMobileVisible(true);
           }
 
           lastScrollY.current = currentScrollY;
@@ -96,7 +100,7 @@ export default function Navigation({ user }) {
 
       {/* --- MOBILE NAVIGATION (Top Right Draggable Radial Dial) --- */}
       {/* --- MOBILE NAVIGATION (Bottom-Centered Radial Dial) --- */}
-      <MobileRadialDial user={user} isVisible={isVisible} />
+      <MobileRadialDial user={user} isMobileVisible={isMobileVisible} />
 
     </nav>
   );
@@ -105,7 +109,7 @@ export default function Navigation({ user }) {
 import { createPortal } from 'react-dom';
 import { motion, useMotionValue, animate } from 'framer-motion';
 
-const MobileRadialDial = ({ user, isVisible }) => {
+const MobileRadialDial = ({ user, isMobileVisible }) => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -281,7 +285,7 @@ const MobileRadialDial = ({ user, isVisible }) => {
 
       {/* FAB Toggle (Bottom Center) */}
       {/* Changed to fixed so it perfectly tracks the visual viewport during scroll without lag */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 pointer-events-auto z-[9999]">
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] transition-all duration-500 ease-in-out ${isMobileVisible || isOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-24 opacity-0 pointer-events-none'}`}>
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="relative w-12 h-12 bg-[#0a0a0a]/70 backdrop-blur-xl text-theme-4 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.6)] border border-white/20 flex items-center justify-center transition-all duration-500 hover:bg-[#0a0a0a]/90 hover:scale-105 active:scale-95 group overflow-hidden"
