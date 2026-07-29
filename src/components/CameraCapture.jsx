@@ -177,7 +177,7 @@ export default function CameraCapture({ eventId, guestId, isCreator }) {
   // Render the Modal view when active
   if (showFilterModal && pendingFile) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-md px-4 pt-12 pb-24 sm:p-6 overflow-y-auto">
         <ImageFilterStep
           originalFile={pendingFile}
           onApply={handleFilterConfirm}

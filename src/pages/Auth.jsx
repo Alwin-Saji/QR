@@ -14,19 +14,32 @@ export default function Auth() {
   const [error, setError] = useState(null);
 
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // If already logged in, redirect to dashboard
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen w-full bg-theme-4 text-[#050505] flex items-center justify-center p-4">
+        <div className="w-8 h-8 border-2 border-[#050505]/20 border-t-[#050505] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (user) return null;
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    if (user) {
+      navigate('/dashboard');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -40,11 +53,21 @@ export default function Auth() {
         toast.success('Welcome back!');
         navigate('/dashboard');
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
         });
         if (error) throw error;
+
+        // Supabase returns an empty identities array if an account with this email already exists
+        if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          const errMsg = 'An account with this email already exists. Please sign in.';
+          setError(errMsg);
+          toast.error(errMsg);
+          setIsLogin(true);
+          return;
+        }
+
         toast.success('Registration successful! You can now log in.');
         setIsLogin(true);
       }

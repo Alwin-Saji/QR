@@ -113,10 +113,10 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
   };
 
   return (
-    <div className="bg-[#E4D6A9] text-[#050505] p-6 sm:p-8 rounded-[2.5rem] w-full max-w-lg mx-auto shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-[#050505]/15 flex flex-col max-h-[90vh] relative animate-in fade-in zoom-in duration-300">
+    <div className="bg-[#E4D6A9] text-[#050505] p-4 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] w-full max-w-lg mx-auto shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-[#050505]/15 flex flex-col max-h-[75vh] sm:max-h-[88vh] my-auto relative animate-in fade-in zoom-in duration-300">
       {/* Header */}
-      <div className="flex justify-between items-center mb-5 shrink-0">
-        <h3 className="text-3xl font-heading font-bold text-[#050505] tracking-wide">Edit Photo</h3>
+      <div className="flex justify-between items-center mb-3 sm:mb-5 shrink-0">
+        <h3 className="text-xl sm:text-3xl font-heading font-bold text-[#050505] tracking-wide">Edit Photo</h3>
         <button 
           onClick={onCancel}
           disabled={isProcessing}
@@ -139,10 +139,10 @@ export const ImageFilterStep = ({ originalFile, onApply, onCancel }) => {
       )}
       
       {/* Live Canvas Window */}
-      <div className="flex justify-center mb-5 shrink-0 bg-[#050505]/5 p-2 rounded-2xl border border-[#050505]/10 shadow-inner">
+      <div className="flex justify-center mb-3 sm:mb-5 shrink-0 bg-[#050505]/5 p-2 rounded-2xl border border-[#050505]/10 shadow-inner">
         <canvas 
           ref={canvasRef} 
-          className="rounded-xl border border-[#050505]/10 max-w-full max-h-[42vh] object-contain shadow-md" 
+          className="rounded-xl border border-[#050505]/10 max-w-full max-h-[24vh] sm:max-h-[38vh] object-contain shadow-md" 
         />
       </div>
 
